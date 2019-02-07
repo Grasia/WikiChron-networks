@@ -247,6 +247,13 @@ def generate_main_content(wikis_arg, network_type_arg, query_string, url_host):
         )
         return html.Div(style={'display': 'flex'}, children=[cytoscape])
 
+    def legend_network():
+        return html.Div([
+            html.P('This is a legend')
+            ],
+            style = {'zIndex': 3, 'position': 'fixed', 'bottom': '20px', 'left': '100px', 'backgroundColor': 'white', 'padding': '10px' }
+        )
+
     if debug:
         print ('Generating main...')
 
@@ -281,6 +288,8 @@ def generate_main_content(wikis_arg, network_type_arg, query_string, url_host):
                             children=args_selection),
 
                 cytoscape_component(),
+
+                legend_network(),
 
                 html.Div(id='network-ready', style={'display': 'none'}),
                 html.Div(id='signal-data', style={'display': 'none'}),
