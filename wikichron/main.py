@@ -394,7 +394,7 @@ def bind_callbacks(app):
         decorator = factory_stylesheet_cytoscape_decorator(network_code, stylesheet)
         decorator.all_transformations(cy_network)
 
-        if lb_clicks and lb_clicks % 2 == 1:
+        if lb_clicks:
             decorator.set_label('data(label)')
         elif pr_clicks and pr_clicks % 2 == 1:
             decorator.set_label('data(page_rank)')

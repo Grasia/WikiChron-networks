@@ -15,6 +15,8 @@ import dash
 import dash_core_components as dcc
 import grasia_dash_components as gdc
 import dash_html_components as html
+import dash_daq as daq
+import sd_material_ui as material
 from dash.dependencies import Input, Output, State
 from datetime import datetime
 
@@ -85,10 +87,8 @@ def controls():
     return html.Div([
             html.H5('Network Controls', className='control-title'),
             html.Div([
-                    html.Button('Show Labels', id='show_labels',
-                        className='control-button action-button'),
-                    html.Button('Show PageRank', id='show_page_rank',
-                        className='control-button action-button'),
+                    daq.BooleanSwitch(label='Show Labels', id='show_labels'),
+                    material.Toggle(label='Show PageRank', id='show_page_rank'),
                     html.Button('Color by Cluster', id='color_cluster',
                         className='control-button action-button'),
                 ])
@@ -138,14 +138,14 @@ def bind_control_callbacks(app):
             stat6 = f'Max Hub Degree: {cy_network["max_degree"]}')
 
 
-    @app.callback(
-        Output('show_labels', 'className'),
-        [Input('show_labels', 'n_clicks')]
-    )
-    def switch_show_labels(clicks):
-        if not clicks or clicks % 2 == 0:
-            return 'control-button action-button'
-        return 'control-button action-button-pressed'
+    #~ @app.callback(
+        #~ Output('show_labels', 'className'),
+        #~ [Input('show_labels', 'n_clicks')]
+    #~ )
+    #~ def switch_show_labels(clicks):
+        #~ if not clicks or clicks % 2 == 0:
+            #~ return 'control-button action-button'
+        #~ return 'control-button action-button-pressed'
 
 
     @app.callback(
