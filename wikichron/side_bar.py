@@ -263,7 +263,7 @@ def bind_callbacks(app):
             return {'display':'none'}
 
     # Note that we need one State parameter for each category metric that is created dynamically
-    @app.callback(Output('url', 'search'),
+    @app.callback(Output('query1', 'value'),
                [Input('compare-button', 'n_clicks')],
                 [State(generate_wikis_accordion_id(name), 'values') for name in wikis_categories_order] +
                 [State('network-selection', 'value')]

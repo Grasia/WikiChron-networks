@@ -26,6 +26,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import grasia_dash_components as gdc
 import sd_material_ui
+from urllib.parse import urlencode
 
 # Local imports:
 import lib.interface as lib
@@ -279,6 +280,17 @@ def bind_callbacks(app):
 
 
     @app.callback(
+        Output('download-button', 'href'),
+        [Input('url', 'search')]
+    )
+    def update_download_button(query_string):
+        href = f'/download/{query_string}'
+        if debug:
+            print(f'Updated the download href to {href}')
+        return href
+
+
+    @app.callback(
         Output('signal-data', 'value'),
         [Input('initial-selection', 'children')]
     )
@@ -332,6 +344,31 @@ def bind_callbacks(app):
             return False
 
         return # bind_callbacks
+
+    @app.callback(
+        Output('query2', 'value'),
+        [Input('dates-slider', 'value')],
+        [State('initial-selection', 'children')]
+    )
+    def add_url_time_bounds(slider, selection_json):
+        if not slider:
+            return None
+
+        selection = json.loads(selection_json)
+        wiki = selection['wikis'][0]
+        
+        first_entry = data_controller.get_first_entry(wiki)
+        first_entry = int(datetime.strptime(str(first_entry), "%Y-%m-%d %H:%M:%S").strftime('%s'))
+        upper_bound = first_entry + slider[1] * TIME_DIV
+        lower_bound = first_entry + slider[0] * TIME_DIV
+
+        time_sect = {
+            'lower_bound': lower_bound,
+            'upper_bound': upper_bound
+        }
+
+        query_str = urlencode(time_sect,  doseq=True)
+        return query_str
 
 
     @app.callback(

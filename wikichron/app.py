@@ -19,10 +19,11 @@ import glob
 import time
 from fs.tempfs import TempFS
 from warnings import warn
-from urllib.parse import parse_qs, urljoin
+from urllib.parse import parse_qs, urljoin, urlencode
 from codecs import decode
 from io import TextIOBase
 import zipfile
+from datetime import datetime
 
 # Dash framework imports
 import dash
@@ -43,6 +44,10 @@ import pandas as pd
 import lib.interface as lib
 from version import __version__
 import cache
+
+from side_bar import generate_wikis_accordion_id, wikis_categories_order
+
+TIME_DIV = 60 * 60 * 24 * 30
 
 # production or development (DEBUG) flag:
 global debug;
@@ -168,6 +173,8 @@ def set_layout():
             html.Div(id='side-bar-root', className='side-bar-cn'),
             html.Div(id='main-root', style={'flex': 'auto'}),
             html.Div(id='sidebar-selection', style={'display': 'none'}),
+            html.Div(id='query1', style={'display': 'none'}),
+            html.Div(id='query2', style={'display': 'none'}),
         ]
     );
 
@@ -206,6 +213,18 @@ def generate_welcome_page():
 
 def app_bind_callbacks(app):
 
+    # Note that we need one State parameter for each category metric that is created dynamically
+    @app.callback(Output('url', 'search'),
+               [Input('query1', 'value'),
+               Input('query2', 'value')]
+    )
+    def update_url(query1, query2):
+        if query1:
+            final_query = query1
+            if query2:
+                final_query = final_query + '&' + query2
+            return final_query
+
 
     @app.callback(
         Output('main-root', 'children'),
@@ -236,9 +255,11 @@ def app_bind_callbacks(app):
 
     @app.callback(
         Output('sidebar-selection', 'children'),
-        [Input('url', 'search')]
+        [Input('query1', 'value')]
     )
     def write_query_string_in_hidden_selection_div(query_string):
+        if not query_string:
+            return None
 
         #~ if not (query_string): # check query string is not empty
             #~ return None
@@ -355,7 +376,6 @@ def start_download_data_server():
 
     @app.server.route('/download/')
     def download_data_server():
-
         selection = parse_qs(decode(request.query_string))
         print ('Received this selection to download: {}'.format(selection))
         if not is_valid(selection):
@@ -363,7 +383,16 @@ def start_download_data_server():
 
         wikis = extract_wikis_from_selection_dict(selection)
         network_code = selection['network'][0]
-        network = data_controller.get_network(wiki = wikis[0], network_code = network_code)
+        lower_bound = ''
+        upper_bound = ''
+        if 'lower_bound' in selection.keys():
+            lower_bound = int(selection['lower_bound'][0])
+            upper_bound = int(selection['upper_bound'][0])
+            upper_bound = datetime.fromtimestamp(upper_bound).strftime("%Y-%m-%d %H:%M:%S")
+            lower_bound = datetime.fromtimestamp(lower_bound).strftime("%Y-%m-%d %H:%M:%S")
+
+        network = data_controller.get_network(wikis[0], network_code, 
+            lower_bound, upper_bound)
 
         tmp = TempFS()
 
