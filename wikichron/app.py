@@ -173,8 +173,8 @@ def set_layout():
             html.Div(id='side-bar-root', className='side-bar-cn'),
             html.Div(id='main-root', style={'flex': 'auto'}),
             html.Div(id='sidebar-selection', style={'display': 'none'}),
-            html.Div(id='query1', style={'display': 'none'}),
-            html.Div(id='query2', style={'display': 'none'}),
+            html.Div(id='query_sidebar', style={'display': 'none'}),
+            html.Div(id='query_main', style={'display': 'none'}),
         ]
     );
 
@@ -213,17 +213,13 @@ def generate_welcome_page():
 
 def app_bind_callbacks(app):
 
-    # Note that we need one State parameter for each category metric that is created dynamically
     @app.callback(Output('url', 'search'),
-               [Input('query1', 'value'),
-               Input('query2', 'value')]
+               [Input('query_sidebar', 'value'),
+               Input('query_main', 'value')]
     )
-    def update_url(query1, query2):
-        if query1:
-            final_query = query1
-            if query2:
-                final_query = final_query + '&' + query2
-            return final_query
+    def update_url(query_sidebar, query_main):
+        if query_sidebar:
+            return query_sidebar if not query_main else query_sidebar + '&' + query_main
 
 
     @app.callback(
@@ -255,7 +251,7 @@ def app_bind_callbacks(app):
 
     @app.callback(
         Output('sidebar-selection', 'children'),
-        [Input('query1', 'value')]
+        [Input('query_sidebar', 'value')]
     )
     def write_query_string_in_hidden_selection_div(query_string):
         if not query_string:

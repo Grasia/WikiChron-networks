@@ -286,7 +286,7 @@ def bind_callbacks(app):
     def update_download_button(query_string):
         href = f'/download/{query_string}'
         if debug:
-            print(f'Updated the download href to {href}')
+            print(f'Download href updated to: {href}')
         return href
 
 
@@ -346,7 +346,7 @@ def bind_callbacks(app):
         return # bind_callbacks
 
     @app.callback(
-        Output('query2', 'value'),
+        Output('query_main', 'value'),
         [Input('dates-slider', 'value')],
         [State('initial-selection', 'children')]
     )
