@@ -136,7 +136,7 @@ def get_available_wikis(data_dir):
 available_networks = lib.get_available_networks()
 available_wikis = get_available_wikis(data_dir)
 available_wikis_dict = {wiki['url']: wiki for wiki in available_wikis}
-selection_params = {'wikis', 'network'}
+selection_params = {'wikis', 'network', 'lower_bound', 'upper_bound'}
 
 
 ######### BEGIN CODE ###########################################################
@@ -173,8 +173,8 @@ def set_layout():
             html.Div(id='side-bar-root', className='side-bar-cn'),
             html.Div(id='main-root', style={'flex': 'auto'}),
             html.Div(id='sidebar-selection', style={'display': 'none'}),
-            html.Div(id='query_sidebar', style={'display': 'none'}),
-            html.Div(id='query_main', style={'display': 'none'}),
+            html.Div(id='query-sidebar', style={'display': 'none'}),
+            html.Div(id='query-main', style={'display': 'none'}),
         ]
     );
 
@@ -213,13 +213,22 @@ def generate_welcome_page():
 
 def app_bind_callbacks(app):
 
-    @app.callback(Output('url', 'search'),
-               [Input('query_sidebar', 'value'),
-               Input('query_main', 'value')]
+    @app.callback(
+        Output('url', 'search'),
+        [Input('query-sidebar', 'value'),
+        Input('query-main', 'value')],
+        [State('url', 'search')]
     )
-    def update_url(query_sidebar, query_main):
+    def update_url(query_sidebar, query_main, query_url):
         if query_sidebar:
-            return query_sidebar if not query_main else query_sidebar + '&' + query_main
+            final_query = query_sidebar
+            if query_main:
+                final_query = query_sidebar + '&' + query_main
+
+                if query_url == final_query:
+                    raise PreventUpdate("Main already generated! main must be generated only once")
+            return final_query
+
 
 
     @app.callback(
@@ -251,29 +260,40 @@ def app_bind_callbacks(app):
 
     @app.callback(
         Output('sidebar-selection', 'children'),
-        [Input('query_sidebar', 'value')]
+        [Input('url', 'search')]
     )
-    def write_query_string_in_hidden_selection_div(query_string):
-        if not query_string:
+    def write_query_string_in_hidden_selection_div(query_url):
+        if not query_url:
             return None
 
-        #~ if not (query_string): # check query string is not empty
-            #~ return None
-
-        # Attention! query_string includes heading ? symbol
-        query_string_dict = parse_qs(query_string[1:])
+        # Attention! query_url includes heading ? symbol
+        query_url_dict = parse_qs(query_url[1:])
+        # query_sidebar_dict = parse_qs(query_sidebar[1:])
+        # query_main_dict = parse_qs(query_main)
 
         # get only the parameters we are interested in for the side_bar selection
-        selection = { param: query_string_dict[param] for param in set(query_string_dict.keys()) & selection_params }
+        url_selection = { param: query_url_dict[param] for param in set(query_url_dict.keys()) & selection_params }
+        # sidebar_selection = { param: query_sidebar_dict[param] for param in set(query_sidebar_dict.keys()) & selection_params }
+        # main_selection = { param: query_main_dict[param] for param in set(query_main_dict.keys()) & selection_params }
+
+        # #Check if the main was already generated with same args
+        # if 'lower_bound' in url_selection.keys() and 'lower_bound' in main_selection.keys():
+        #     if url_selection['lower_bound'][0] == main_selection['lower_bound'][0] and \
+        #         url_selection['upper_bound'][0] == main_selection['upper_bound'][0] and \
+        #         url_selection['wikis'][0] == sidebar_selection['wikis'][0] and \
+        #         url_selection['network'][0] == sidebar_selection['network'][0]:
+
+        #         raise PreventUpdate("Main already generated! main must be generated only once")
+
 
         # change value for network selection from a list to a single string
         #  since user can select only one network at a time
-        if 'network' in selection:
-            selection['network'] = selection['network'][0]
+        if 'network' in url_selection:
+            url_selection['network'] = url_selection['network'][0]
 
         if debug:
-            print('selection to write in query string: {}'.format(selection))
-        return (json.dumps(selection))
+            print(f'selection to write in query string: {url_selection}')
+        return (json.dumps(url_selection))
 
 
     @app.callback(Output('side-bar-root', 'children'),

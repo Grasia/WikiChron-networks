@@ -346,7 +346,7 @@ def bind_callbacks(app):
         return # bind_callbacks
 
     @app.callback(
-        Output('query_main', 'value'),
+        Output('query-main', 'value'),
         [Input('dates-slider', 'value')],
         [State('initial-selection', 'children')]
     )
