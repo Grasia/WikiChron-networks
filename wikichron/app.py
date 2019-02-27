@@ -213,23 +213,27 @@ def generate_welcome_page():
 
 def app_bind_callbacks(app):
 
-    @app.callback(Output('url', 'search'),
-               [Input('query_sidebar', 'value'),
-               Input('query_main', 'value')]
-    )
-    def update_url(query_sidebar, query_main):
-        if query_sidebar:
-            return query_sidebar if not query_main else query_sidebar + '&' + query_main
+    #~ @app.callback(Output('url', 'search'),
+               #~ [Input('query_sidebar', 'value'),
+               #~ Input('query_main', 'value')]
+    #~ )
+    #~ def update_url(query_sidebar, query_main):
+        #~ if query_sidebar:
+            #~ return query_sidebar if not query_main else query_sidebar + '&' + query_main
 
 
     @app.callback(
         Output('main-root', 'children'),
         [Input('sidebar-selection', 'children')],
-        [State('url', 'search')]
+        [State('main', 'children'),
+        State('url', 'search')]
     )
-    def load_main_graphs(selection_json, query_string):
+    def load_main(selection_json, main, query_string):
         if debug:
-            print('load_main_graphs: This is the selection: {}'.format(selection_json))
+            print('load_main: This is the selection: {}'.format(selection_json))
+
+        if main: # Make sure generate main content only once -> Avoid circular loop.
+            raise PreventUpdate("Main already generated! main must be generated only once");
 
         if selection_json:
             selection = json.loads(selection_json)
@@ -251,7 +255,7 @@ def app_bind_callbacks(app):
 
     @app.callback(
         Output('sidebar-selection', 'children'),
-        [Input('query_sidebar', 'value')]
+        [Input('url', 'search')]
     )
     def write_query_string_in_hidden_selection_div(query_string):
         if not query_string:
@@ -283,10 +287,9 @@ def app_bind_callbacks(app):
     )
     def generate_side_bar_onload(pathname, sidebar, query_string):
 
-        if pathname:
-            if debug:
+        if pathname and debug:
                 print('--> Dash App Loaded!')
-                print('\tAnd this is current path: {}'.format(pathname))
+                print(f'\tAnd this is current path: {pathname}{query_string}')
 
         if not sidebar:
 
@@ -387,7 +390,7 @@ def start_download_data_server():
             upper_bound = datetime.fromtimestamp(upper_bound).strftime("%Y-%m-%d %H:%M:%S")
             lower_bound = datetime.fromtimestamp(lower_bound).strftime("%Y-%m-%d %H:%M:%S")
 
-        network = data_controller.get_network(wikis[0], network_code, 
+        network = data_controller.get_network(wikis[0], network_code,
             lower_bound, upper_bound)
 
         tmp = TempFS()
@@ -421,7 +424,7 @@ def create_app():
     #~ app.scripts.config.serve_locally = True
 
     # skeleton.css: (Already included in dash stylesheet)
-    #~ app.css.append_css({"external_url": "https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css"})    
+    #~ app.css.append_css({"external_url": "https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css"})
 
     cache.set_up_cache(app, debug)
     global data_controller
