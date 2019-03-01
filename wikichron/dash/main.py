@@ -399,17 +399,14 @@ def bind_callbacks(app):
     )
     def move_slider_range(bt_back, bt_forward, step, di_slider):
         step = int(step)
-        # if not type(step) is int:
-        #     raise PreventUpdate(f'Input step is {type(step)} and must be int')
         
         if bt_back and int(bt_back) > int(bt_forward):
-            step = -abs(step)
-
-        elif bt_forward and int(bt_forward) > int(bt_back):
-            step = 1 * abs(step)
-
-        else:
+            step = -step
+        elif not (bt_forward and int(bt_forward) > int(bt_back)):
             raise PreventUpdate()
+
+        # step value is in [0, n] | n € N
+        # so step value must be a positive value if bt_forward was press
 
         old_upper = di_slider['props']['value'][0]
         old_lower = di_slider['props']['value'][1]
