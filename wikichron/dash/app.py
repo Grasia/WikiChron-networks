@@ -212,7 +212,12 @@ def app_bind_callbacks(app):
                 network['code'] = selection['network']
                 network['name'] = get_network_name_from_code(network['code'])
 
+                lower_bound = selection.get('lower_bound')[0] if selection.get('lower_bound')[0] else None
+                upper_bound = selection.get('upper_bound')[0] if selection.get('upper_bound')[0] else None
+
+
                 return main.generate_main_content(wikis, network,
+                                                lower_bound, upper_bound,
                                                 query_string, APP_HOSTNAME)
 
 

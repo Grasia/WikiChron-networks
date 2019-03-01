@@ -45,7 +45,8 @@ global debug
 debug = True if os.environ.get('FLASK_ENV') == 'development' else False
 
 
-def generate_main_content(wikis_arg, network_type_arg, query_string, url_host):
+def generate_main_content(wikis_arg, network_type_arg, lower_bound, upper_bound,
+                          query_string, url_host):
     """
     It generates the main content
     Parameters:
@@ -166,7 +167,60 @@ def generate_main_content(wikis_arg, network_type_arg, query_string, url_host):
             )
         ])
 
-    def date_slider_control():
+    def date_slider_control(wiki, network_code, lower_bound, upper_bound):
+
+        def create_dash_slider(wiki, network_code, lower_bound, upper_bound):
+
+            network = data_controller.get_network(wiki, network_code)
+
+            origin = int(datetime.strptime(str(network.first_entry),
+                "%Y-%m-%d %H:%M:%S").strftime('%s'))
+            end = int(datetime.strptime(str(network.last_entry),
+                "%Y-%m-%d %H:%M:%S").strftime('%s'))
+
+            time_gap = end - origin
+            max_time = time_gap // TIME_DIV
+
+            #~ max_number_of_marks = 11
+            if max_time < 12:
+                step_for_marks = 1
+            elif max_time < 33:
+                step_for_marks = 3
+            elif max_time < 66:
+                step_for_marks = 6
+            elif max_time < 121:
+                step_for_marks = 12
+            elif max_time < 264:
+                step_for_marks = 24
+            else:
+                step_for_marks = 36
+
+            range_slider_marks = {i: datetime.fromtimestamp(origin
+             + i * TIME_DIV).strftime('%b %Y') for i in range(1,
+             max_time-step_for_marks, step_for_marks)}
+
+            range_slider_marks[max_time] = datetime.fromtimestamp(
+            origin + max_time * TIME_DIV).strftime('%b %Y')
+
+
+            #~ upper_bound = first_entry + slider[1] * TIME_DIV
+            #~ lower_bound = first_entry + slider[0] * TIME_DIV
+
+            initial_left_value = 2 if lower_bound else 1 # DIVIDE between seconds equivalent to a month?
+            initial_right_value = 3 if upper_bound else max_time # DIVIDE between seconds equivalent to a month?
+
+
+            return dcc.RangeSlider(
+                        id='dates-slider',
+                        min=1,
+                        max=max_time,
+                        step=1,
+                        value=[initial_left_value, initial_right_value],
+                        marks=range_slider_marks
+                    )
+
+
+
         return html.Div(id='date-slider-div', className='container',
                 children=[
                     html.Span(id='slider-header',
@@ -179,9 +233,9 @@ def generate_main_content(wikis_arg, network_type_arg, query_string, url_host):
                     html.Div(id='date-slider-container',
                         style={'height': '35px'},
                         children=[
-                            dcc.RangeSlider(
-                                id='dates-slider'
-                        )],
+                            create_dash_slider(wiki, network_code,
+                                               lower_bound, upper_bound)
+                        ],
                     )
                 ],
                 style={'margin-top': '15px'}
@@ -221,10 +275,10 @@ def generate_main_content(wikis_arg, network_type_arg, query_string, url_host):
         print ('Generating main...')
 
     network_type_code = network_type_arg['code']
-    args_selection = json.dumps({"wikis": wikis_arg, "network": network_type_code})
-
-    selected_wiki_name = wikis_arg[0]['name']
     selected_network_name = network_type_arg['name']
+    selected_wiki = wikis_arg[0]
+
+    args_selection = json.dumps({"wikis": wikis_arg, "network": network_type_code})
 
     controls_sidebar = ControlsSidebar()
     sidebar_decorator = factory_sidebar_decorator(network_type_code, controls_sidebar)
@@ -241,9 +295,10 @@ def generate_main_content(wikis_arg, network_type_arg, query_string, url_host):
 
                 html.Hr(style={'margin-top': '0px'}),
 
-                selection_title(selected_wiki_name, selected_network_name),
+                selection_title(selected_wiki['name'], selected_network_name),
 
-                date_slider_control(),
+                date_slider_control(selected_wiki, network_type_code,
+                                    lower_bound, upper_bound),
 
                 html.Hr(style={'margin-bottom': '0px'}),
 
@@ -325,58 +380,58 @@ def bind_callbacks(app):
         return # bind_callbacks
 
 
-    @app.callback(
-        Output('date-slider-container', 'children'),
-        [Input('signal-data', 'value')],
-        [State('initial-selection', 'children')]
-    )
-    def update_slider(signal, selection_json):
-        if not signal:
-            return dcc.Slider(id='dates-slider')
+    #@app.callback(
+        #Output('date-slider-container', 'children'),
+        #[Input('signal-data', 'value')],
+        #[State('initial-selection', 'children')]
+    #)
+    #def update_slider(signal, selection_json):
+        #if not signal:
+            #return dcc.Slider(id='dates-slider')
 
-         # get network instance from selection
-        selection = json.loads(selection_json)
-        wiki = selection['wikis'][0]
-        network_code = selection['network']
-        network = data_controller.get_network(wiki, network_code)
+         ## get network instance from selection
+        #selection = json.loads(selection_json)
+        #wiki = selection['wikis'][0]
+        #network_code = selection['network']
+        #network = data_controller.get_network(wiki, network_code)
 
-        origin = int(datetime.strptime(str(network.first_entry),
-            "%Y-%m-%d %H:%M:%S").strftime('%s'))
-        end = int(datetime.strptime(str(network.last_entry),
-            "%Y-%m-%d %H:%M:%S").strftime('%s'))
+        #origin = int(datetime.strptime(str(network.first_entry),
+            #"%Y-%m-%d %H:%M:%S").strftime('%s'))
+        #end = int(datetime.strptime(str(network.last_entry),
+            #"%Y-%m-%d %H:%M:%S").strftime('%s'))
 
-        time_gap = end - origin
-        max_time = time_gap // TIME_DIV
+        #time_gap = end - origin
+        #max_time = time_gap // TIME_DIV
 
-        #~ max_number_of_marks = 11
-        if max_time < 12:
-            step_for_marks = 1
-        elif max_time < 33:
-            step_for_marks = 3
-        elif max_time < 66:
-            step_for_marks = 6
-        elif max_time < 121:
-            step_for_marks = 12
-        elif max_time < 264:
-            step_for_marks = 24
-        else:
-            step_for_marks = 36
+        ##~ max_number_of_marks = 11
+        #if max_time < 12:
+            #step_for_marks = 1
+        #elif max_time < 33:
+            #step_for_marks = 3
+        #elif max_time < 66:
+            #step_for_marks = 6
+        #elif max_time < 121:
+            #step_for_marks = 12
+        #elif max_time < 264:
+            #step_for_marks = 24
+        #else:
+            #step_for_marks = 36
 
-        range_slider_marks = {i: datetime.fromtimestamp(origin
-         + i * TIME_DIV).strftime('%b %Y') for i in range(1,
-         max_time-step_for_marks, step_for_marks)}
+        #range_slider_marks = {i: datetime.fromtimestamp(origin
+         #+ i * TIME_DIV).strftime('%b %Y') for i in range(1,
+         #max_time-step_for_marks, step_for_marks)}
 
-        range_slider_marks[max_time] = datetime.fromtimestamp(
-        origin + max_time * TIME_DIV).strftime('%b %Y')
+        #range_slider_marks[max_time] = datetime.fromtimestamp(
+        #origin + max_time * TIME_DIV).strftime('%b %Y')
 
-        return  dcc.RangeSlider(
-                    id='dates-slider',
-                    min=1,
-                    max=max_time,
-                    step=1,
-                    value=[1, max_time],
-                    marks=range_slider_marks
-                )
+        #return  dcc.RangeSlider(
+                    #id='dates-slider',
+                    #min=1,
+                    #max=max_time,
+                    #step=1,
+                    #value=[1, max_time],
+                    #marks=range_slider_marks
+                #)
 
 
     @app.callback(
