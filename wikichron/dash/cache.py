@@ -3,7 +3,7 @@ from flask_caching import Cache
 global cache;
 cache = None;
 
-REDIS_URL = 'redis://localhost:6379'
+REDIS_URL = 'redis://localhost:6379' #TOMOVE
 
 def set_up_cache(app, debug):
     global cache;
