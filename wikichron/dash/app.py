@@ -42,7 +42,7 @@ import cache
 
 # load config
 from dash_config import BaseConfig
-wikichron_base_pathname = BaseConfig.DASH_BASE_PATHNAME;
+wikichron_base_pathname = BaseConfig.DASH_BASE_PATHNAME; #TOCHANGE
 
 # production or development (DEBUG) flag:
 global debug;
@@ -85,7 +85,7 @@ meta_tags = [
     },
     {
         'name': 'og:image',
-        'content': '{}/wikichron_networks_logo.png'.format(assets_url_path)
+        'content': '{}/wikichron_networks_logo.png'.format(assets_url_path) #TOCHANGE
     },
     {
         'name': 'og:image:width',
@@ -172,11 +172,11 @@ def generate_welcome_page():
     return html.Div(id='welcome-container',
             className='container',
             children=[
-                html.Div(html.Img(src='{}/network-graph.svg'.format(assets_url_path))),
+                html.Div(html.Img(src='{}/network-graph.svg'.format(assets_url_path))), #TOCHANGE
                 html.H2([
                         html.Span('Welcome to '),
                         html.Span(
-                            html.Img(src='{}/tipo-logo-networks.svg'.format(assets_url_path)),
+                            html.Img(src='{}/tipo-logo-networks.svg'.format(assets_url_path)), #TOCHANGE
                         ),
                     ],
                     style = {'display': 'flex'}
@@ -213,9 +213,7 @@ def app_bind_callbacks(app):
                 network['code'] = selection['network']
                 network['name'] = get_network_name_from_code(network['code'])
 
-                return main.generate_main_content(wikis, network,
-                                                query_string,
-                                                app.server.config['APP_HOSTNAME'])
+                return main.generate_main_content(wikis, network, query_string)
 
 
         print('There is not a valid wikis & metrics tuple selection yet for plotting any graph')

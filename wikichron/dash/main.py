@@ -45,7 +45,7 @@ global debug
 debug = True if os.environ.get('FLASK_ENV') == 'development' else False
 
 
-def generate_main_content(wikis_arg, network_type_arg, query_string, APP_HOSTNAME):
+def generate_main_content(wikis_arg, network_type_arg, query_string):
     """
     It generates the main content
     Parameters:
@@ -57,8 +57,10 @@ def generate_main_content(wikis_arg, network_type_arg, query_string, APP_HOSTNAM
     Return: An HTML object with the main content
     """
 
+    # Load app config
+    config = current_app.config
     # Contructs the assets_url_path for image sources:
-    assets_url_path = os.path.join('/app/', 'assets') #TOCHANGE: use a config var
+    assets_url_path = os.path.join(config['DASH_BASE_PATHNAME'], 'assets')
 
     def main_header():
         """
@@ -229,6 +231,11 @@ def generate_main_content(wikis_arg, network_type_arg, query_string, APP_HOSTNAM
     sidebar_decorator = factory_sidebar_decorator(network_type_code, controls_sidebar)
     sidebar_decorator.add_all_sections()
 
+    share_url_path = config['APP_HOSTNAME'] + config['DASH_BASE_PATHNAME'] + \
+                        query_string
+    download_url_path = '{}/download/{}'.format(config['APP_HOSTNAME'],
+                                                    query_string)
+
     return html.Div(
             id='main',
             className='control-text',
@@ -246,8 +253,7 @@ def generate_main_content(wikis_arg, network_type_arg, query_string, APP_HOSTNAM
 
                 html.Hr(style={'margin-bottom': '0px'}),
 
-                share_modal('{}/app/{}'.format(APP_HOSTNAME, query_string),
-                            '{}/download/{}'.format(APP_HOSTNAME, query_string)),
+                share_modal(share_url_path, download_url_path),
 
                 html.Div(id='initial-selection', style={'display': 'none'},
                             children=args_selection),
