@@ -45,15 +45,14 @@ global debug
 debug = True if os.environ.get('FLASK_ENV') == 'development' else False
 
 
-def generate_main_content(wikis_arg, network_type_arg, query_string, url_host):
+def generate_main_content(wikis_arg, network_type_arg, query_string, APP_HOSTNAME):
     """
     It generates the main content
     Parameters:
         -wikis_arg: wikis to show, only used the first wiki
         -network_type_arg, type of network to generate
         -query_string: string to share/download
-        -url_host: url to share/download
-        -others: are not used
+        -APP_HOSTNAME: url to share/download
 
     Return: An HTML object with the main content
     """
@@ -247,8 +246,8 @@ def generate_main_content(wikis_arg, network_type_arg, query_string, url_host):
 
                 html.Hr(style={'margin-bottom': '0px'}),
 
-                share_modal('{}/app/{}'.format(url_host, query_string),
-                            '{}/download/{}'.format(url_host, query_string)),
+                share_modal('{}/app/{}'.format(APP_HOSTNAME, query_string),
+                            '{}/download/{}'.format(APP_HOSTNAME, query_string)),
 
                 html.Div(id='initial-selection', style={'display': 'none'},
                             children=args_selection),

@@ -1,1 +1,1 @@
-from wikichron.dash.dash_config import DevelopmentConfig
+from wikichron.dash.dash_config import BaseConfig, DevelopmentConfig

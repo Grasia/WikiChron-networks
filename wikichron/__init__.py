@@ -20,8 +20,7 @@ def create_app(config_class = DevelopmentConfig):
     server = Flask(__name__)
 
     server.config.from_object(config_class)
-    if os.environ.get('FLASK_CONFIGURATION'):
-        server.config.from_envvar('FLASK_CONFIGURATION')
+    server.config.from_envvar('FLASK_CONFIGURATION', silent=True)
 
     register_dashapp(server)
     register_blueprints(server)

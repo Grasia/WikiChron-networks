@@ -35,11 +35,14 @@ from flask import send_file, request
 from urllib.parse import parse_qs
 from codecs import decode
 
-
 # Local imports:
 import networks.interface
 from version import __version__
 import cache
+
+# load config
+from dash_config import BaseConfig
+wikichron_base_pathname = BaseConfig.DASH_BASE_PATHNAME;
 
 # production or development (DEBUG) flag:
 global debug;
@@ -50,8 +53,6 @@ global data_dir;
 data_dir = os.getenv('WIKICHRON_DATA_DIR', 'data')
 
 # global app config
-APP_HOSTNAME = 'http://wikichron.science'; # TOMOVE to a config var
-wikichron_base_pathname = '/app/'; # TOMOVE to a config var
 assets_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets');
 assets_url_path = os.path.join(wikichron_base_pathname, 'assets')
 
@@ -213,7 +214,8 @@ def app_bind_callbacks(app):
                 network['name'] = get_network_name_from_code(network['code'])
 
                 return main.generate_main_content(wikis, network,
-                                                query_string, APP_HOSTNAME)
+                                                query_string,
+                                                app.server.config['APP_HOSTNAME'])
 
 
         print('There is not a valid wikis & metrics tuple selection yet for plotting any graph')

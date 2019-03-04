@@ -14,9 +14,12 @@ import os
 from urllib.parse import urljoin
 from flask import Blueprint, render_template, redirect, send_from_directory
 
-server_bp = Blueprint('main', __name__)
+# load config
+from wikichron.config import BaseConfig
+wikichron_base_pathname = BaseConfig.DASH_BASE_PATHNAME;
 
-wikichron_base_pathname = '/app/'; #TOCHANGE use config var
+
+server_bp = Blueprint('main', __name__)
 
 
 # Redirects / to /app
