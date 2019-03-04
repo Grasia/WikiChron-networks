@@ -8,6 +8,7 @@ import flask
 
 # local imports
 from app import create_dash_app, set_up_app
+from dash_config import DevelopmentConfig
 
 global debug;
 debug = True if os.environ.get('FLASK_ENV') == 'development' else False
@@ -77,6 +78,9 @@ def run(app):
 
 
 server = flask.Flask(__name__)
+
+# load config for flask server
+server.config.from_object(DevelopmentConfig)
 
 # create and config Dash instance
 app = create_dash_app(server)
