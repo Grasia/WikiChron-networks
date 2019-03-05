@@ -226,8 +226,8 @@ def app_bind_callbacks(app):
     )
     def write_query_string_in_hidden_selection_div(query_string):
 
-        #~ if not (query_string): # check query string is not empty
-            #~ return None
+        if not (query_string): # check query string is not empty
+            return None
 
         # Attention! query_string includes heading ? symbol
         query_string_dict = parse_qs(query_string[1:])

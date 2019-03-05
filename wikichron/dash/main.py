@@ -258,13 +258,19 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
                 html.Div(id='initial-selection', style={'display': 'none'},
                             children=args_selection),
 
-                cytoscape_component(),
+                dcc.Loading(id='loading-wrapper',
+                    type='default',
+                    children=[
+                        cytoscape_component(),
+                    ]
+                ),
 
                 html.Div(id='network-ready', style={'display': 'none'}),
                 html.Div(id='signal-data', style={'display': 'none'}),
                 html.Div(id='ready', style={'display': 'none'}),
                 html.Div(id='bind_ctl_sidebar', style={'display': 'none'})
         ]);
+
 
 def bind_callbacks(app):
 
