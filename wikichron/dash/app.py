@@ -349,7 +349,7 @@ def create_dash_app(server):
     meta_tags = define_meta_tags(server.config['APP_HOSTNAME'], assets_url_path)
 
     print('Creating new Dash instance...')
-    app = dash.Dash('WikiChron - Networks', # TO CHANGE by __name__
+    app = dash.Dash(__name__,
                     server = server,
                     meta_tags = meta_tags,
                     external_stylesheets = external_stylesheets,
