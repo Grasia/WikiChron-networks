@@ -26,7 +26,22 @@ $('.wiki-checkbox').on( "click", function() {
 });
 
 function enable_action_button() {
+
+    var chosenWiki = $('.wiki-checkbox').
+                        filter( function(index, element){
+                            return element.checked
+                        })[0].value
+    console.log(chosenWiki);
+
+    var chosenNetwork = $('.networks-radiobutton').
+                        filter( function(index, element){
+                            return element.checked
+                        })[0].value
+    console.log(chosenNetwork);
+
     $('#selection-footer-button')[0].href = "wikis=" + chosenWiki + "&networks=" + chosenNetwork
+
+    $('#selection-footer-button')[0].disabled = false;
 }
 
 function disable_action_button() {
