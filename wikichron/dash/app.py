@@ -40,16 +40,13 @@ from codecs import decode
 import networks.interface
 from version import __version__
 import cache
+import data_controller
 
 # production or development (DEBUG) flag:
 global debug;
 debug = True if os.environ.get('FLASK_ENV') == 'development' else False
 
 ######### GLOBAL VARIABLES #########
-
-# get csv data location (data/ by default)
-global data_dir;
-data_dir = os.getenv('WIKICHRON_DATA_DIR', 'data')
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css', # dash stylesheet
                         'https://use.fontawesome.com/releases/v5.0.9/css/all.css',  # fontawesome css
@@ -64,19 +61,15 @@ if debug:
 else: # load piwik only in production:
     to_import_js.append('js/piwik.js')
 
-
-def get_available_wikis(data_dir):
-    wikis_json_file = open(os.path.join(data_dir, 'wikis.json'))
-    wikis = json.load(wikis_json_file)
-    return wikis
-
-
 # other global variables:
+global selection_params;
+selection_params = {'wikis', 'network', 'lower_bound', 'upper_bound'};
 
-available_networks = networks.interface.get_available_networks()
-available_wikis = get_available_wikis(data_dir)
-available_wikis_dict = {wiki['url']: wiki for wiki in available_wikis}
-selection_params = {'wikis', 'network', 'lower_bound', 'upper_bound'}
+# The folowing ones will be set later on
+global available_networks;
+global available_wikis;
+global available_wikis_dict;
+
 
 ######### AUX FUNCTION DEFINITIONS #########
 
@@ -367,11 +360,20 @@ def create_dash_app(server):
     # skeleton.css: (Already included in dash stylesheet)
     #~ app.css.append_css({"external_url": "https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css"})
 
-    cache.set_up_cache(app, debug)
-    global data_controller
-    import data_controller
+    app_cache = cache.set_up_cache(app, debug)
+    data_controller.set_cache(app_cache)
 
     return app
+
+
+def _init_global_vars():
+    global available_networks;
+    global available_wikis;
+    global available_wikis_dict;
+
+    available_networks = networks.interface.get_available_networks()
+    available_wikis = data_controller.get_available_wikis()
+    available_wikis_dict = {wiki['url']: wiki for wiki in available_wikis}
 
 
 def _init_app_callbacks(app):
@@ -387,6 +389,9 @@ def _init_app_callbacks(app):
 
 
 def set_up_app(app):
+    # init global vars needed for building UI app components
+    _init_global_vars()
+
     # bind callbacks
     print('Binding callbacks...')
     _init_app_callbacks(app)

@@ -18,9 +18,7 @@ import numpy as np
 import time
 from datetime import datetime
 from warnings import warn
-
-from cache import cache
-
+import json
 
 # Local imports:
 import networks.interface
@@ -32,46 +30,61 @@ data_dir = os.getenv('WIKICHRON_DATA_DIR', 'data')
 precooked_net_dir = os.getenv('PRECOOKED_NETWORK_DIR', 'precooked_data/networks')
 TIME_DIV = 60 * 60 * 24 * 30
 
-@cache.memoize()
-def read_data(wiki):
-    df = get_dataframe_from_csv(wiki['data'])
-    prepare_data(df)
-    df = clean_up_bot_activity(df, wiki)
-    return df
+### CACHED FUNCTIONS ###
+
+def set_cache(cache):
+
+    global read_data
+    global get_network
+
+    @cache.memoize()
+    def read_data(wiki):
+        df = get_dataframe_from_csv(wiki['data'])
+        prepare_data(df)
+        df = clean_up_bot_activity(df, wiki)
+        return df
 
 
-@cache.memoize(timeout=3600)
-def get_network(wiki, network_code, lower_bound = '', upper_bound = ''):
-    """
-    Parameters
-        - wiki: Related info about the wiki selected.
-        - network_code: network selected. It is an instance of BaseNetwork.
-        - lower_bound: a formated string "%Y-%m-%d %H:%M:%S", to filter the pandas obj
-        - upper_bound: a formated string "%Y-%m-%d %H:%M:%S", to filter the pandas obj
-    Return: Data representing the network.
-    """
-    # load data from csvs:
-    time_start_loading_csvs = time.perf_counter()
-    df = read_data(wiki)
-    time_end_loading_csvs = time.perf_counter() - time_start_loading_csvs
-    print(' * [Timing] Loading csvs : {} seconds'.format(time_end_loading_csvs) )
+    @cache.memoize(timeout=3600)
+    def get_network(wiki, network_code, lower_bound = '', upper_bound = ''):
+        """
+        Parameters
+            - wiki: Related info about the wiki selected.
+            - network_code: network selected. It is an instance of BaseNetwork.
+            - lower_bound: a formated string "%Y-%m-%d %H:%M:%S", to filter the pandas obj
+            - upper_bound: a formated string "%Y-%m-%d %H:%M:%S", to filter the pandas obj
+        Return: Data representing the network.
+        """
+        # load data from csvs:
+        time_start_loading_csvs = time.perf_counter()
+        df = read_data(wiki)
+        time_end_loading_csvs = time.perf_counter() - time_start_loading_csvs
+        print(' * [Timing] Loading csvs : {} seconds'.format(time_end_loading_csvs) )
 
-    # generate network:
-    network = networks.interface.factory_network(network_code)
-    print(' * [Info] Starting calculations....')
-    time_start_calculations = time.perf_counter()
-    network.generate_from_pandas(df=df, lower_bound = lower_bound,
-        upper_bound = upper_bound)
-    time_end_calculations = time.perf_counter() - time_start_calculations
-    print(' * [Timing] Calculations : {} seconds'.format(time_end_calculations) )
+        # generate network:
+        network = networks.interface.factory_network(network_code)
+        print(' * [Info] Starting calculations....')
+        time_start_calculations = time.perf_counter()
+        network.generate_from_pandas(df=df, lower_bound = lower_bound,
+            upper_bound = upper_bound)
+        time_end_calculations = time.perf_counter() - time_start_calculations
+        print(' * [Timing] Calculations : {} seconds'.format(time_end_calculations) )
 
-    # network metrics
-    time_start_calculations = time.perf_counter()
-    network.calculate_metrics()
-    time_end_calculations = time.perf_counter() - time_start_calculations
-    print(f'[Timing] Network metrics calculation in {time_end_calculations} seconds')
+        # network metrics
+        time_start_calculations = time.perf_counter()
+        network.calculate_metrics()
+        time_end_calculations = time.perf_counter() - time_start_calculations
+        print(f'[Timing] Network metrics calculation in {time_end_calculations} seconds')
 
-    return network
+        return network
+
+
+### OTHER DATA-RELATED FUNCTIONS ###
+
+def get_available_wikis():
+    wikis_json_file = open(os.path.join(data_dir, 'wikis.json'))
+    wikis = json.load(wikis_json_file)
+    return wikis
 
 
 def get_first_entry(wiki):
