@@ -46,6 +46,24 @@ global debug
 debug = True if os.environ.get('FLASK_ENV') == 'development' else False
 
 
+def update_query_by_time(wiki, query_string, up_val, low_val):
+    query_string_dict = parse_qs(query_string)
+
+    # get only the parameters we are interested in for the side_bar selection
+    selection = { param: query_string_dict[param] for param in set(query_string_dict.keys()) & selection_params }
+
+    # Let's parse the time values
+    first_entry = data_controller.get_first_entry(wiki)
+    first_entry = int(datetime.strptime(str(first_entry), "%Y-%m-%d %H:%M:%S").strftime('%s'))
+    upper_bound = first_entry + up_val * TIME_DIV
+    lower_bound = first_entry + low_val * TIME_DIV
+
+    # Now, time to update the query
+    selection['upper_bound'] = upper_bound
+    selection['lower_bound'] = lower_bound
+    return urlencode(selection,  doseq=True)
+
+
 def generate_main_content(wikis_arg, network_type_arg, query_string):
     """
     It generates the main content
@@ -415,12 +433,20 @@ def bind_callbacks(app):
 
     @app.callback(
         Output('date-slider-container', 'children'),
-        [Input('initial-selection', 'children')]
+        [Input('initial-selection', 'children')],
+        [State('url', 'search')]
     )
-    def update_slider(selection_json):
+    def update_slider(selection_json, query_string):
          # get network instance from selection
         selection = json.loads(selection_json)
         wiki = selection['wikis'][0]
+
+        # Attention! query_string includes heading ? symbol
+        query_string_dict = parse_qs(query_string[1:])
+
+        # get only the parameters we are interested in for the side_bar selection
+        selection = { param: query_string_dict[param] for param in set(query_string_dict.keys()) & selection_params }
+
         origin = data_controller.get_first_entry(wiki)
         end = data_controller.get_last_entry(wiki)
 
@@ -431,6 +457,13 @@ def bind_callbacks(app):
 
         time_gap = end - origin
         max_time = time_gap // TIME_DIV
+
+        if 'lower_bound' and 'upper_bound' in selection:
+            low_val = (int(selection['lower_bound'][0]) - origin) // TIME_DIV
+            upper_val = (int(selection['upper_bound'][0]) - origin) // TIME_DIV
+        else:
+            low_val = 1
+            upper_val = int(2 + max_time / 10)
 
         #~ max_number_of_marks = 11
         if max_time < 12:
@@ -458,7 +491,7 @@ def bind_callbacks(app):
                     min=1,
                     max=max_time,
                     step=1,
-                    value=[1, int(2 + max_time / 10)],
+                    value=[low_val, upper_val],
                     marks=range_slider_marks
                 )
 
@@ -466,35 +499,41 @@ def bind_callbacks(app):
     @app.callback(
         Output('download-button', 'href'),
         [Input('dates-slider', 'value')],
-        [State('url', 'search'),
+        [State('download-button', 'href'),
         State('initial-selection', 'children')]
     )
     def update_download_url(slider, query_string, selection_json):
         if not slider:
             raise PreventUpdate()
-
         selection = json.loads(selection_json)
         wiki = selection['wikis'][0]
 
-        # Attention! query_string includes heading ? symbol
-        query_string_dict = parse_qs(query_string[1:])
-
-        # get only the parameters we are interested in for the side_bar selection
-        selection = { param: query_string_dict[param] for param in set(query_string_dict.keys()) & selection_params }
-
-        # Let's parse the time values
-        first_entry = data_controller.get_first_entry(wiki)
-        first_entry = int(datetime.strptime(str(first_entry), "%Y-%m-%d %H:%M:%S").strftime('%s'))
-        upper_bound = first_entry + slider[1] * TIME_DIV
-        lower_bound = first_entry + slider[0] * TIME_DIV
-
-        # Now, time to update the query
-        selection['upper_bound'] = upper_bound
-        selection['lower_bound'] = lower_bound
-        new_query = urlencode(selection,  doseq=True)
-        href = f'/download/?{new_query}'
+        query_splited = query_string.split("?")
+        new_query = update_query_by_time(wiki, query_splited[1], slider[1], slider[0])
+        href = f'{query_splited[0]}?{new_query}'
 
         if debug:
             print(f'Download href updated to: {href}')
 
         return href
+
+
+    @app.callback(
+        Output('share-link-input', 'value'),
+        [Input('dates-slider', 'value')],
+        [State('share-link-input', 'value'),
+        State('initial-selection', 'children')]
+    )
+    def update_share_url(slider, query_string, selection_json):
+        if not slider:
+            raise PreventUpdate()
+        selection = json.loads(selection_json)
+        wiki = selection['wikis'][0]
+
+        query_splited = query_string.split("?")
+        new_query = update_query_by_time(wiki, query_splited[1], slider[1], slider[0])
+        new_query = f'{query_splited[0]}?{new_query}'
+        if debug:
+            print(f'Share link updated to: {new_query}')
+
+        return new_query
