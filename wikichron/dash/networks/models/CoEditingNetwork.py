@@ -6,6 +6,7 @@
 
 """
 
+import pandas as pd
 import numpy
 import math
 from datetime import datetime
@@ -38,12 +39,25 @@ class CoEditingNetwork(BaseNetwork):
     TIME_BOUND = 24 * 15
     NAME = 'Co-Editing'
     CODE = 'co_editing_network'
+    AVAILABLE_METRICS = {
+            'Page Rank': 'page_rank',
+            'Number of Edits': 'num_edits',
+            'Betweenness': 'betweenness'
+        }
 
-    def __init__(self, is_directed = False, num_communities = -1,
-            graph = {}, first_entry = None, last_entry = None):
+    USER_INFO = {
+        'Wiki ID': 'contributor_id',
+        'User Name': 'label',
+        'Edits Number': 'num_edits',
+        'First Edit': 'first_edit',
+        'Last Edit': 'last_edit'
+    }
 
-        super().__init__(is_directed = is_directed,
-            num_communities = num_communities, first_entry = first_entry,
+
+    def __init__(self, is_directed = False, graph = {},
+        first_entry = None, last_entry = None):
+
+        super().__init__(is_directed = is_directed, first_entry = first_entry,
             last_entry = last_entry, graph = graph)
 
 
@@ -150,8 +164,10 @@ class CoEditingNetwork(BaseNetwork):
                         if 'page_rank' in self.graph.vs.attributes() else '',
                     'betweenness': "{0:.5f}".format(node['betweenness'])
                         if 'betweenness' in self.graph.vs.attributes() else '',
+                    'cluster': node['cluster']
+                        if 'cluster' in self.graph.vs.attributes() else '',
                     'cluster_color': node['cluster_color']
-                        if self.num_communities is not -1 else ''
+                        if 'cluster_color' in self.graph.vs.attributes() else ''
                 }
             })
 
@@ -192,10 +208,19 @@ class CoEditingNetwork(BaseNetwork):
         di_net['num_nodes'] = self.graph.vcount()
         di_net['num_edges'] = self.graph.ecount()
         di_net['max_degree'] = self.graph.maxdegree()
-        di_net['n_communities'] = self.num_communities \
-        if self.num_communities is not -1 else '...'
+        di_net['n_communities'] = self.graph['n_communities'] \
+            if 'n_communities' in self.graph.attributes() else '...'
+        di_net['assortativity'] = self.graph['assortativity_degree'] \
+            if 'assortativity_degree' in self.graph.attributes() else '...'
         di_net['network'] = network
         return di_net
+
+
+    def calculate_metrics(self):
+        self.calculate_page_rank()
+        self.calculate_betweenness()
+        self.calculate_assortativity_degree()
+        self.calculate_communities()
 
 
     def calculate_w_time(self, tsp1, tsp2):
@@ -234,3 +259,24 @@ class CoEditingNetwork(BaseNetwork):
        """
        # namespace 0 => wiki article
        return df[df['page_ns'] == 0]
+
+
+    def get_metric_dataframe(self, metric: str) -> pd.DataFrame:
+        if self.AVAILABLE_METRICS[metric] in self.graph.vs.attributes():
+            df = pd.DataFrame({
+                    'User': self.graph.vs['label'],
+                    metric: self.graph.vs[self.AVAILABLE_METRICS[metric]]
+                    })
+            return df
+
+        return None
+
+
+    @classmethod
+    def get_available_metrics(cls) -> dict:
+        return cls.AVAILABLE_METRICS
+
+
+    @classmethod
+    def get_user_info(cls) -> dict:
+        return cls.USER_INFO

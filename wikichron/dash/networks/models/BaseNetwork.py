@@ -5,17 +5,17 @@
  Distributed under the terms of the GPLv3 license.
 
 """
-
+import abc
 from igraph import Graph, ClusterColoringPalette
 from colormap.colors import rgb2hex
 
-class BaseNetwork():
+class BaseNetwork(metaclass=abc.ABCMeta):
 
     NAME = 'Base Network'
     CODE = 'base_network'
 
-    def __init__(self, is_directed = False, 
-            num_communities = -1, first_entry = None, 
+
+    def __init__(self, is_directed = False, first_entry = None, 
             last_entry = None, graph = {},):
 
         if not graph:
@@ -23,19 +23,11 @@ class BaseNetwork():
         else:
             self.graph = graph
 
-        self.num_communities = num_communities
         self.first_entry = first_entry
-        self.last_entry = last_entry 
+        self.last_entry = last_entry
 
 
-    def init_network(self):
-        """
-        Constructs an instance of this network type.
-        Use this instead of the default constructor
-        """
-        return __init_(self)
-
-
+    @abc.abstractmethod
     def generate_from_pandas(self, df, lower_bound, upper_bound):
         """
         Generates a graph from a pandas data
@@ -50,9 +42,10 @@ class BaseNetwork():
                     to filter by time the df 
         Return: A graph with the network representation.
         """
-        raise NotImplementedError('generate_from_pandas is not implemented')
+        pass
 
 
+    @abc.abstractmethod
     def to_cytoscape_dict(self):
         """
         Transform this network to cytoscape dict
@@ -60,7 +53,45 @@ class BaseNetwork():
         Return:
             A dict with the cytoscape structure
         """
-        raise NotImplementedError('to_cytoscape_dict is not implemented')
+        pass
+
+
+    @abc.abstractmethod
+    def calculate_metrics(self):
+        """
+        The network which implements this method should calculate
+        only the useful metrics not all of them
+        """
+        pass
+
+
+    @abc.abstractmethod
+    def get_metric_dataframe(self, metric):
+        """
+        This function generates a dateframe with 2 cols, the node name
+        and a node metric value.
+        Prarameters:
+            - metric: an existing metric in the network
+        Return:
+            if metric exist a dataframe, if not None 
+        """
+        pass
+
+    
+    @abc.abstractmethod
+    def get_available_metrics(self) -> dict:
+        """
+        Return a dict with the metrics
+        """
+        pass
+
+
+    @abc.abstractmethod
+    def get_user_info(self) -> dict:
+        """
+        Return a dict with the user info
+        """
+        pass
 
 
     def write_gml(self, file):
@@ -94,10 +125,25 @@ class BaseNetwork():
         """
         Calculates communities and assigns a color per community
         """
-        if self.num_communities is -1:
+        if not 'n_communities' in self.graph.attributes():
             mod = self.graph.community_multilevel(weights='weight')
-            self.graph.vs['cluster'] = mod
-            self.num_communities = len(mod)
+            self.graph.vs['cluster'] = mod.membership
+            self.graph['n_communities'] = len(mod)
             pal = ClusterColoringPalette(len(mod))
             self.graph.vs['cluster_color'] = list(map(lambda x: rgb2hex(x[0],x[1],x[2], normalised=True),
                 pal.get_many(mod.membership)))
+
+
+    def calculate_assortativity_degree(self):
+        """
+        Calculates the assortativity degree and put it as an graph attrb.
+        * Reference:
+            Newman MEJ: Assortative mixing in networks, Phys Rev Lett89:208701, 
+            2002.@see:assortativity_degree()when thetypes are the vertex degrees
+        """
+        if not 'assortativity_degree' in self.graph.attributes():
+            assortativity = self.graph.assortativity_degree(self.graph.is_directed())
+            if assortativity:
+                assortativity = "{0:.5f}".format(assortativity)
+
+            self.graph['assortativity_degree'] = assortativity
