@@ -26,6 +26,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_table
+import plotly.graph_objs as go
 import grasia_dash_components as gdc
 import sd_material_ui
 from flask import current_app
@@ -260,6 +261,21 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
                     selected_rows=[],
                 )
 
+
+    def distribution_graph():
+       return html.Div([
+            dcc.RadioItems(
+                id='scale',
+                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
+                value='Linear',
+                labelStyle={'display': 'inline-block'}
+            ),
+            dcc.Graph(
+                id='distribution-graph'
+            )
+        ]) 
+
+
     if debug:
         print ('Generating main...')
 
@@ -300,6 +316,7 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
 
                 cytoscape_component(),
                 ranking_table(),
+                distribution_graph(),
 
                 html.Div(id='network-ready', style={'display': 'none'}),
                 html.Div(id='signal-data', style={'display': 'none'}),
@@ -536,3 +553,49 @@ def bind_callbacks(app):
             print(f'Share link updated to: {new_query}')
 
         return new_query
+
+
+    @app.callback(
+        Output('distribution-graph', 'figure'),
+        [Input('scale', 'value'),
+        Input('dates-slider', 'value')],
+        [State('initial-selection', 'children')]
+    )
+    def update_graph(scale_type, slider, selection_json):
+        if not slider:
+            raise PreventUpdate()
+
+        selection = json.loads(selection_json)
+        wiki = selection['wikis'][0]
+        network_code = selection['network']
+        (lower, upper) = data_controller.get_time_bounds(wiki, slider[0], slider[1])
+        network = data_controller.get_network(wiki, network_code, lower, upper)
+
+        (k, p_k) = network.get_degree_distribution()
+
+        return {
+            'data': [go.Scatter(
+                x=k,
+                y=p_k,
+                mode='markers',
+                marker={
+                    'size': 15,
+                    'opacity': 0.5,
+                    'line': {'width': 0.5, 'color': 'white'}
+                }
+            )],
+            'layout': go.Layout(
+                title='Degree Distribution',
+                xaxis={
+                    'title': 'K',
+                    'type': 'linear' if scale_type == 'Linear' else 'log'
+                },
+                yaxis={
+                    'title': 'P_k',
+                    'type': 'linear' if scale_type == 'Linear' else 'log'
+                },
+                margin={'l': 40, 'b': 30, 't': 10, 'r': 0},
+                height=450,
+                hovermode='closest'
+            )
+        }
