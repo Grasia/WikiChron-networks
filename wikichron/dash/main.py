@@ -457,7 +457,7 @@ def bind_callbacks(app):
         time_gap = end - origin
         max_time = time_gap // TIME_DIV
 
-        if 'lower_bound' and 'upper_bound' in selection:
+        if all(k in selection for k in ('lower_bound', 'upper_bound')):
             low_val = (int(selection['lower_bound'][0]) - origin) // TIME_DIV
             upper_val = (int(selection['upper_bound'][0]) - origin) // TIME_DIV
         else:
