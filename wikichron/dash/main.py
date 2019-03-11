@@ -88,7 +88,7 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
 
         Return: An HTML object with the header content
         """
-        href_download_button = '/download/{}'.format(query_string)
+        href_download_button = f'{config["DASH_DOWNLOAD_PATHNAME"]}{query_string}'
         return (html.Div(id='header',
                 className='container',
                 style={'display': 'flex', 'align-items': 'center', \
@@ -143,11 +143,9 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
 
     def share_modal(share_link, download_link):
         """
-        Generates a window to share a link
-        Parameters:
-                -share_link: a link to share
-                -download_link: a link to download
-
+        Generates a window to share a link.
+        Values for the share link and download link will be set at runtime in a
+        dash callback.
         Return: An HTML object with the window to share and download
         """
         return html.Div([
@@ -274,7 +272,7 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
     sidebar_decorator.add_all_sections()
 
     share_url_path = f'{config["APP_HOSTNAME"]}{config["DASH_BASE_PATHNAME"]}{query_string}'
-    download_url_path = f'{config["APP_HOSTNAME"]}/download/{query_string}'
+    download_url_path = f'{config["APP_HOSTNAME"]}{config["DASH_DOWNLOAD_PATHNAME"]}{query_string}'
 
     return html.Div(
             id='main',
@@ -495,44 +493,47 @@ def bind_callbacks(app):
                 )
 
 
-    @app.callback(
+    @app.callback([
         Output('download-button', 'href'),
+        Output('share-download-input', 'value')
+        ],
         [Input('dates-slider', 'value')],
-        [State('download-button', 'href'),
+        [State('share-download-input', 'value'),
         State('initial-selection', 'children')]
     )
-    def update_download_url(slider, query_string, selection_json):
+    def update_download_url(slider, download_url, selection_json):
         if not slider:
             raise PreventUpdate()
         selection = json.loads(selection_json)
         wiki = selection['wikis'][0]
 
-        query_splited = query_string.split("?")
-        new_query = update_query_by_time(wiki, query_splited[1], slider[1], slider[0])
-        href = f'{query_splited[0]}?{new_query}'
+
+        download_url_splited = download_url.split("?")
+        new_query = update_query_by_time(wiki, download_url_splited[1], slider[1], slider[0])
+        new_download_url = f'{download_url_splited[0]}?{new_query}'
 
         if debug:
-            print(f'Download href updated to: {href}')
+            print(f'Download href updated to: {new_download_url}')
 
-        return href
+        return (new_download_url, new_download_url)
 
 
     @app.callback(
         Output('share-link-input', 'value'),
         [Input('dates-slider', 'value')],
-        [State('share-link-input', 'value'),
+        [State('url', 'href'),
         State('initial-selection', 'children')]
     )
-    def update_share_url(slider, query_string, selection_json):
+    def update_share_url(slider, url, selection_json):
         if not slider:
             raise PreventUpdate()
         selection = json.loads(selection_json)
         wiki = selection['wikis'][0]
 
-        query_splited = query_string.split("?")
-        new_query = update_query_by_time(wiki, query_splited[1], slider[1], slider[0])
-        new_query = f'{query_splited[0]}?{new_query}'
+        url_splited = url.split("?")
+        new_query = update_query_by_time(wiki, url_splited[1], slider[1], slider[0])
+        new_url = f'{url_splited[0]}?{new_query}'
         if debug:
-            print(f'Share link updated to: {new_query}')
+            print(f'Share link updated to: {new_url}')
 
-        return new_query
+        return new_url

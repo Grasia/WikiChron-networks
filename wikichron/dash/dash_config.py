@@ -1,5 +1,6 @@
 class BaseConfig(object):
     DASH_BASE_PATHNAME = '/app/'
+    DASH_DOWNLOAD_PATHNAME = '/download/'
 
 
 class DevelopmentConfig(BaseConfig):
