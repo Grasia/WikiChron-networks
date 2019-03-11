@@ -507,8 +507,8 @@ def bind_callbacks(app):
         [Input('cytoscape', 'tapNodeData')],
         [State('initial-selection', 'children')]
     )
-    def update_node_info(userInfo, selection_json):
-        if not userInfo:
+    def update_node_info(user_info, selection_json):
+        if not user_info:
             raise PreventUpdate()
 
         selection = json.loads(selection_json)
@@ -519,12 +519,12 @@ def bind_callbacks(app):
         info_stack = []
         # Let's add the user info
         for key in dic_info.keys():
-            if dic_info[key] in userInfo:
-                info_stack.append(html.P(f'{key}: {userInfo[dic_info[key]]}'))
+            if dic_info[key] in user_info:
+                info_stack.append(html.P(f'{key}: {user_info[dic_info[key]]}'))
 
         # Let's add the metrics
         for key in dic_metrics.keys():
-            if dic_metrics[key] in userInfo:
-                info_stack.append(html.P(f'{key}: {userInfo[dic_metrics[key]]}'))
+            if dic_metrics[key] in user_info:
+                info_stack.append(html.P(f'{key}: {user_info[dic_metrics[key]]}'))
 
         return info_stack
