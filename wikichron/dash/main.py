@@ -26,6 +26,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_table
+import plotly.graph_objs as go
 import grasia_dash_components as gdc
 import sd_material_ui
 from flask import current_app
@@ -268,6 +269,21 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
                     selected_rows=[],
                 )
 
+
+    def distribution_graph():
+       return html.Div([
+            dcc.RadioItems(
+                id='scale',
+                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
+                value='Linear',
+                labelStyle={'display': 'inline-block'}
+            ),
+            dcc.Graph(
+                id='distribution-graph'
+            )
+        ]) 
+
+
     if debug:
         print ('Generating main...')
 
@@ -308,6 +324,7 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
 
                 cytoscape_component(),
                 ranking_table(),
+                distribution_graph(),
 
                 html.Div(id='network-ready', style={'display': 'none'}),
                 html.Div(id='signal-data', style={'display': 'none'}),
@@ -551,24 +568,23 @@ def bind_callbacks(app):
     @app.callback(
         Output('download-button', 'href'),
         [Input('dates-slider', 'value')],
-        [State('share-download-input', 'value'),
+        [State('download-button', 'href'),
         State('initial-selection', 'children')]
     )
-    def update_download_url(slider, download_url, selection_json):
+    def update_download_url(slider, query_string, selection_json):
         if not slider:
             raise PreventUpdate()
         selection = json.loads(selection_json)
         wiki = selection['wikis'][0]
 
-
-        download_url_splited = download_url.split("?")
-        new_query = update_query_by_time(wiki, download_url_splited[1], slider[1], slider[0])
-        new_download_url = f'{download_url_splited[0]}?{new_query}'
+        query_splited = query_string.split("?")
+        new_query = update_query_by_time(wiki, query_splited[1], slider[1], slider[0])
+        href = f'{query_splited[0]}?{new_query}'
 
         if debug:
-            print(f'Download href updated to: {new_download_url}')
+            print(f'Download href updated to: {href}')
 
-        return (new_download_url, new_download_url)
+        return href
 
 
     @app.callback(
@@ -577,16 +593,62 @@ def bind_callbacks(app):
         [State('share-link-input', 'value'),
         State('initial-selection', 'children')]
     )
-    def update_share_url(slider, url, selection_json):
+    def update_share_url(slider, query_string, selection_json):
         if not slider:
             raise PreventUpdate()
         selection = json.loads(selection_json)
         wiki = selection['wikis'][0]
 
-        url_splited = url.split("?")
-        new_query = update_query_by_time(wiki, url_splited[1], slider[1], slider[0])
-        new_url = f'{url_splited[0]}?{new_query}'
+        query_splited = query_string.split("?")
+        new_query = update_query_by_time(wiki, query_splited[1], slider[1], slider[0])
+        new_query = f'{query_splited[0]}?{new_query}'
         if debug:
-            print(f'Share link updated to: {new_url}')
+            print(f'Share link updated to: {new_query}')
 
-        return new_url
+        return new_query
+
+
+    @app.callback(
+        Output('distribution-graph', 'figure'),
+        [Input('scale', 'value'),
+        Input('dates-slider', 'value')],
+        [State('initial-selection', 'children')]
+    )
+    def update_graph(scale_type, slider, selection_json):
+        if not slider:
+            raise PreventUpdate()
+
+        selection = json.loads(selection_json)
+        wiki = selection['wikis'][0]
+        network_code = selection['network']
+        (lower, upper) = data_controller.get_time_bounds(wiki, slider[0], slider[1])
+        network = data_controller.get_network(wiki, network_code, lower, upper)
+
+        (k, p_k) = network.get_degree_distribution()
+
+        return {
+            'data': [go.Scatter(
+                x=k,
+                y=p_k,
+                mode='markers',
+                marker={
+                    'size': 15,
+                    'opacity': 0.5,
+                    'line': {'width': 0.5, 'color': 'white'}
+                }
+            )],
+            'layout': go.Layout(
+                title='Degree Distribution',
+                xaxis={
+                    'title': 'K',
+                    'type': 'linear' if scale_type == 'Linear' else 'log'
+                },
+                yaxis={
+                    'title': 'P_k',
+                    'type': 'linear' if scale_type == 'Linear' else 'log'
+                },
+                margin={'l': 40, 'b': 30, 't': 10, 'r': 0},
+                height=450,
+                hovermode='closest'
+            )
+        }
