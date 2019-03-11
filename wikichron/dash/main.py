@@ -521,7 +521,7 @@ def bind_callbacks(app):
     @app.callback(
         Output('share-link-input', 'value'),
         [Input('dates-slider', 'value')],
-        [State('url', 'href'),
+        [State('share-link-input', 'value'),
         State('initial-selection', 'children')]
     )
     def update_share_url(slider, url, selection_json):

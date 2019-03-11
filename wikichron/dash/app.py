@@ -339,7 +339,7 @@ def create_dash_app(server):
     assets_url_path = os.path.join(wikichron_base_pathname, 'assets')
     assets_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 'resources', 'assets');
-    hostname = f'{server.config["APP_HOSTNAME"]}:{server.config["PORT"]}'
+    hostname = f'{server.config["APP_HOSTNAME"]}'
     meta_tags = define_meta_tags(hostname, assets_url_path)
 
     print('Creating new Dash instance...')

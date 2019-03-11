@@ -4,6 +4,6 @@ class BaseConfig(object):
 
 
 class DevelopmentConfig(BaseConfig):
-    APP_HOSTNAME = 'http://localhost'
     PORT = '8890'
+    APP_HOSTNAME = f'http://localhost:{PORT}'
     DEBUG = True
