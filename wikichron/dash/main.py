@@ -26,6 +26,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 import dash_table
+import plotly.graph_objs as go
 import grasia_dash_components as gdc
 import sd_material_ui
 from flask import current_app
@@ -45,6 +46,24 @@ selection_params = {'wikis', 'network', 'lower_bound', 'upper_bound'}
 
 global debug
 debug = True if os.environ.get('FLASK_ENV') == 'development' else False
+
+
+def update_query_by_time(wiki, query_string, up_val, low_val):
+    query_string_dict = parse_qs(query_string)
+
+    # get only the parameters we are interested in for the side_bar selection
+    selection = { param: query_string_dict[param] for param in set(query_string_dict.keys()) & selection_params }
+
+    # Let's parse the time values
+    first_entry = data_controller.get_first_entry(wiki)
+    first_entry = int(datetime.strptime(str(first_entry), "%Y-%m-%d %H:%M:%S").strftime('%s'))
+    upper_bound = first_entry + up_val * TIME_DIV
+    lower_bound = first_entry + low_val * TIME_DIV
+
+    # Now, time to update the query
+    selection['upper_bound'] = upper_bound
+    selection['lower_bound'] = lower_bound
+    return urlencode(selection,  doseq=True)
 
 
 def generate_main_content(wikis_arg, network_type_arg, query_string):
@@ -71,7 +90,7 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
 
         Return: An HTML object with the header content
         """
-        href_download_button = '/download/{}'.format(query_string)
+        href_download_button = f'{config["DASH_DOWNLOAD_PATHNAME"]}{query_string}'
         return (html.Div(id='header',
                 className='container',
                 style={'display': 'flex', 'align-items': 'center', \
@@ -126,11 +145,9 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
 
     def share_modal(share_link, download_link):
         """
-        Generates a window to share a link
-        Parameters:
-                -share_link: a link to share
-                -download_link: a link to download
-
+        Generates a window to share a link.
+        Values for the share link and download link will be set at runtime in a
+        dash callback.
         Return: An HTML object with the window to share and download
         """
         return html.Div([
@@ -176,12 +193,22 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
     def date_slider_control():
         return html.Div(id='date-slider-div', className='container',
                 children=[
-                    html.Span(id='slider-header',
-                    children=[
-                        html.Strong(
-                            'Time interval (months):'),
-                        html.Span(id='display-slider-selection')
-                    ]),
+
+                    html.Div(children=[
+                        html.Span(id='slider-header',
+                        children=[
+                            html.Strong(
+                                'Time interval (months):'),
+                            html.Span(id='display-slider-selection')
+                        ]),
+
+                        html.Div(children=[
+                            html.Button("<<", id="bt-back", n_clicks_timestamp='0', className='step-button'),
+                            dcc.Input(id="in-step-slider" , type='number', value='1', min='0'),
+                            html.Button(">>", id="bt-forward", n_clicks_timestamp='0', className='step-button'),
+                        ], className='slider-controls'),
+                    ], 
+                    style={'display': 'flex'}),
 
                     html.Div(id='date-slider-container',
                         style={'height': '35px'},
@@ -191,7 +218,7 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
                         )],
                     )
                 ],
-                style={'margin-top': '15px'}
+                style={'margin-top': '15px', 'display': 'grid'}
                 )
 
 
@@ -243,6 +270,21 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
                     selected_rows=[],
                 )
 
+
+    def distribution_graph():
+       return html.Div([
+            dcc.RadioItems(
+                id='scale',
+                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
+                value='Linear',
+                labelStyle={'display': 'inline-block'}
+            ),
+            dcc.Graph(
+                id='distribution-graph'
+            )
+        ]) 
+
+
     if debug:
         print ('Generating main...')
 
@@ -256,9 +298,8 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
     sidebar_decorator = factory_sidebar_decorator(network_type_code, controls_sidebar)
     sidebar_decorator.add_all_sections()
 
-    share_url_path = config['APP_HOSTNAME'] + config['DASH_BASE_PATHNAME'] + \
-                        query_string
-    download_url_path = 'f{config["APP_HOSTNAME"]}/download/{query_string}'
+    share_url_path = f'{config["APP_HOSTNAME"]}{config["DASH_BASE_PATHNAME"]}{query_string}'
+    download_url_path = f'{config["APP_HOSTNAME"]}{config["DASH_DOWNLOAD_PATHNAME"]}{query_string}'
 
     return html.Div(
             id='main',
@@ -284,6 +325,7 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
 
                 cytoscape_component(),
                 ranking_table(),
+                distribution_graph(),
                 html.Div(id='user-info'),
 
                 html.Div(id='network-ready', style={'display': 'none'}),
@@ -417,12 +459,20 @@ def bind_callbacks(app):
 
     @app.callback(
         Output('date-slider-container', 'children'),
-        [Input('initial-selection', 'children')]
+        [Input('initial-selection', 'children')],
+        [State('url', 'search')]
     )
-    def update_slider(selection_json):
+    def update_slider(selection_json, query_string):
          # get network instance from selection
         selection = json.loads(selection_json)
         wiki = selection['wikis'][0]
+
+        # Attention! query_string includes heading ? symbol
+        query_string_dict = parse_qs(query_string[1:])
+
+        # get only the parameters we are interested in for the side_bar selection
+        selection = { param: query_string_dict[param] for param in set(query_string_dict.keys()) & selection_params }
+
         origin = data_controller.get_first_entry(wiki)
         end = data_controller.get_last_entry(wiki)
 
@@ -433,6 +483,13 @@ def bind_callbacks(app):
 
         time_gap = end - origin
         max_time = time_gap // TIME_DIV
+
+        if all(k in selection for k in ('lower_bound', 'upper_bound')):
+            low_val = (int(selection['lower_bound'][0]) - origin) // TIME_DIV
+            upper_val = (int(selection['upper_bound'][0]) - origin) // TIME_DIV
+        else:
+            low_val = 1
+            upper_val = int(2 + max_time / 10)
 
         #~ max_number_of_marks = 11
         if max_time < 12:
@@ -460,46 +517,97 @@ def bind_callbacks(app):
                     min=1,
                     max=max_time,
                     step=1,
-                    value=[1, int(2 + max_time / 10)],
+                    value=[low_val, upper_val],
                     marks=range_slider_marks
                 )
 
 
     @app.callback(
+        Output('dates-slider', 'value'),
+        [Input('bt-back', 'n_clicks_timestamp'),
+        Input('bt-forward', 'n_clicks_timestamp')],
+        [State('in-step-slider', 'value'),
+        State('date-slider-container', 'children')]
+    )
+    def move_slider_range(bt_back, bt_forward, step, di_slider):
+        step = int(step)
+        
+        if bt_back and int(bt_back) > int(bt_forward):
+            step = -step
+        elif not (bt_forward and int(bt_forward) > int(bt_back)):
+            raise PreventUpdate()
+
+        # step value is in [0, n] | n € N
+        # so step value must be a positive value if bt_forward was press
+
+        old_upper = di_slider['props']['value'][0]
+        old_lower = di_slider['props']['value'][1]
+        upper = di_slider['props']['value'][0]
+        lower = di_slider['props']['value'][1]
+        max_val = di_slider['props']['max']
+        min_val = di_slider['props']['min']
+
+        if upper + step > max_val:
+            upper = max_val
+        elif upper + step < min_val:
+            upper = min_val
+        else:
+            upper = upper + step
+
+        if lower + step < min_val:
+            lower = min_val
+        elif lower + step > max_val:
+            lower = max_val
+        else:
+            lower = lower + step
+        # Let's check if the input will change the slider
+        if lower == old_lower and upper == old_upper:
+             raise PreventUpdate('Slider will not change')
+    
+        return [upper, lower]
+
+
+    @app.callback(
         Output('download-button', 'href'),
         [Input('dates-slider', 'value')],
-        [State('url', 'search'),
+        [State('download-button', 'href'),
         State('initial-selection', 'children')]
     )
     def update_download_url(slider, query_string, selection_json):
         if not slider:
             raise PreventUpdate()
-
         selection = json.loads(selection_json)
         wiki = selection['wikis'][0]
 
-        # Attention! query_string includes heading ? symbol
-        query_string_dict = parse_qs(query_string[1:])
-
-        # get only the parameters we are interested in for the side_bar selection
-        selection = { param: query_string_dict[param] for param in set(query_string_dict.keys()) & selection_params }
-
-        # Let's parse the time values
-        first_entry = data_controller.get_first_entry(wiki)
-        first_entry = int(datetime.strptime(str(first_entry), "%Y-%m-%d %H:%M:%S").strftime('%s'))
-        upper_bound = first_entry + slider[1] * TIME_DIV
-        lower_bound = first_entry + slider[0] * TIME_DIV
-
-        # Now, time to update the query
-        selection['upper_bound'] = upper_bound
-        selection['lower_bound'] = lower_bound
-        new_query = urlencode(selection,  doseq=True)
-        href = f'/download/?{new_query}'
+        query_splited = query_string.split("?")
+        new_query = update_query_by_time(wiki, query_splited[1], slider[1], slider[0])
+        href = f'{query_splited[0]}?{new_query}'
 
         if debug:
             print(f'Download href updated to: {href}')
 
         return href
+
+
+    @app.callback(
+        Output('share-link-input', 'value'),
+        [Input('dates-slider', 'value')],
+        [State('share-link-input', 'value'),
+        State('initial-selection', 'children')]
+    )
+    def update_share_url(slider, query_string, selection_json):
+        if not slider:
+            raise PreventUpdate()
+        selection = json.loads(selection_json)
+        wiki = selection['wikis'][0]
+
+        query_splited = query_string.split("?")
+        new_query = update_query_by_time(wiki, query_splited[1], slider[1], slider[0])
+        new_query = f'{query_splited[0]}?{new_query}'
+        if debug:
+            print(f'Share link updated to: {new_query}')
+
+        return new_query
 
 
     @app.callback(
@@ -528,3 +636,49 @@ def bind_callbacks(app):
                 info_stack.append(html.P(f'{key}: {user_info[dic_metrics[key]]}'))
 
         return info_stack
+
+
+    @app.callback(
+        Output('distribution-graph', 'figure'),
+        [Input('scale', 'value'),
+        Input('dates-slider', 'value')],
+        [State('initial-selection', 'children')]
+    )
+    def update_graph(scale_type, slider, selection_json):
+        if not slider:
+            raise PreventUpdate()
+
+        selection = json.loads(selection_json)
+        wiki = selection['wikis'][0]
+        network_code = selection['network']
+        (lower, upper) = data_controller.get_time_bounds(wiki, slider[0], slider[1])
+        network = data_controller.get_network(wiki, network_code, lower, upper)
+
+        (k, p_k) = network.get_degree_distribution()
+
+        return {
+            'data': [go.Scatter(
+                x=k,
+                y=p_k,
+                mode='markers',
+                marker={
+                    'size': 15,
+                    'opacity': 0.5,
+                    'line': {'width': 0.5, 'color': 'white'}
+                }
+            )],
+            'layout': go.Layout(
+                title='Degree Distribution',
+                xaxis={
+                    'title': 'K',
+                    'type': 'linear' if scale_type == 'Linear' else 'log'
+                },
+                yaxis={
+                    'title': 'P_k',
+                    'type': 'linear' if scale_type == 'Linear' else 'log'
+                },
+                margin={'l': 40, 'b': 30, 't': 10, 'r': 0},
+                height=450,
+                hovermode='closest'
+            )
+        }

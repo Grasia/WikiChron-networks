@@ -108,8 +108,12 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         Calculates the network pageRank
         """
         if not 'page_rank' in self.graph.vs.attributes():
-            self.graph.vs['page_rank'] = self.graph.pagerank(
-                directed=self.graph.is_directed(), weights = 'weight')
+            if not 'weight' in self.graph.es.attributes():
+                self.graph.vs['page_rank'] = self.graph.pagerank(
+                    directed=self.graph.is_directed())    
+            else:
+                self.graph.vs['page_rank'] = self.graph.pagerank(
+                    directed=self.graph.is_directed(), weights = 'weight')
 
 
     def calculate_betweenness(self):
@@ -117,8 +121,12 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         Calculates the network betweenness
         """
         if not 'betweenness' in self.graph.vs.attributes():
-            self.graph.vs['betweenness'] = self.graph.betweenness(
-                directed=self.graph.is_directed(), weights = 'weight')
+            if not 'weight' in self.graph.es.attributes():
+                self.graph.vs['betweenness'] = self.graph.betweenness(
+                    directed=self.graph.is_directed())    
+            else:
+                self.graph.vs['betweenness'] = self.graph.betweenness(
+                    directed=self.graph.is_directed(), weights = 'weight')
 
 
     def calculate_communities(self):
@@ -126,7 +134,11 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         Calculates communities and assigns a color per community
         """
         if not 'n_communities' in self.graph.attributes():
-            mod = self.graph.community_multilevel(weights='weight')
+            if not 'weight' in self.graph.es.attributes():
+                mod = self.graph.community_multilevel()
+            else:
+                mod = self.graph.community_multilevel(weights='weight')
+                
             self.graph.vs['cluster'] = mod.membership
             self.graph['n_communities'] = len(mod)
             pal = ClusterColoringPalette(len(mod))
@@ -147,3 +159,20 @@ class BaseNetwork(metaclass=abc.ABCMeta):
                 assortativity = "{0:.5f}".format(assortativity)
 
             self.graph['assortativity_degree'] = assortativity
+
+
+    def get_degree_distribution(self):
+        """
+        It returns the degree distribution
+        """
+        ##########
+        # TODO Check if it s directed
+        ##########
+        # Let's count the number of each degree
+        p_k = [0 for i in range(0, self.graph.maxdegree()+1)]
+        for x in self.graph.degree(): p_k[x] += 1
+        # Now, we are gonna clean the 0's
+        k = [i for i in range(0, self.graph.maxdegree()+1) if p_k[i] > 0]
+        p_k = list(filter(lambda x: x > 0, p_k))
+
+        return (k, p_k)
