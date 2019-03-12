@@ -47,7 +47,7 @@ class CoEditingNetwork(BaseNetwork):
         }
 
     USER_INFO = {
-        'Wiki ID': 'id',
+        'User ID': 'id',
         'User Name': 'label',
         'First Edit': 'first_edit',
         'Last Edit': 'last_edit'
