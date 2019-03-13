@@ -207,7 +207,7 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
                             dcc.Input(id="in-step-slider" , type='number', value='1', min='0'),
                             html.Button(">>", id="bt-forward", n_clicks_timestamp='0', className='step-button'),
                         ], className='slider-controls'),
-                    ], 
+                    ],
                     style={'display': 'flex'}),
 
                     html.Div(id='date-slider-container',
@@ -282,7 +282,7 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
             dcc.Graph(
                 id='distribution-graph'
             )
-        ]) 
+        ])
 
 
     if debug:
@@ -417,7 +417,7 @@ def bind_callbacks(app):
         # highlight nodes selected
         selection = [data[s] for s in selected]
         return selection
-        
+
 
     @app.callback(
         Output('ready', 'value'),
@@ -531,7 +531,7 @@ def bind_callbacks(app):
     )
     def move_slider_range(bt_back, bt_forward, step, di_slider):
         step = int(step)
-        
+
         if bt_back and int(bt_back) > int(bt_forward):
             step = -step
         elif not (bt_forward and int(bt_forward) > int(bt_back)):
@@ -563,7 +563,7 @@ def bind_callbacks(app):
         # Let's check if the input will change the slider
         if lower == old_lower and upper == old_upper:
              raise PreventUpdate('Slider will not change')
-    
+
         return [upper, lower]
 
 
