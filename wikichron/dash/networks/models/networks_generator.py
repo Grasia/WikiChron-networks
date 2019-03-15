@@ -11,6 +11,7 @@
 """
 
 from .CoEditingNetwork import CoEditingNetwork
+from .TalkPagesNetwork import TalkPagesNetwork
 
 def create_available_networks():
     networks = []
@@ -20,18 +21,25 @@ def create_available_networks():
 def factory_network(network_code):
     if network_code == CoEditingNetwork.CODE:
         return CoEditingNetwork()
+    elif network_code == TalkPagesNetwork.CODE:
+        return TalkPagesNetwork()
     else:
         raise Exception("Something went bad. Missing network type selection.")
 
 
 def get_user_info(network_code):
     if network_code == CoEditingNetwork.CODE:
-            return CoEditingNetwork.get_user_info()
+        return CoEditingNetwork.get_user_info()
+    elif network_code == TalkPagesNetwork.CODE:
+        return TalkPagesNetwork.get_user_info()
     else:
-            raise Exception("Something went bad. Missing network type selection.")
+        raise Exception("Something went bad. Missing network type selection.")
+
 
 def get_available_metrics(network_code):
     if network_code == CoEditingNetwork.CODE:
-            return CoEditingNetwork.get_available_metrics()
+        return CoEditingNetwork.get_available_metrics()
+    elif network_code == TalkPagesNetwork.CODE:
+        return TalkPagesNetwork.get_available_metrics()
     else:
-            raise Exception("Something went bad. Missing network type selection.")
+        raise Exception("Something went bad. Missing network type selection.")
