@@ -1,11 +1,11 @@
 """
-
  Author: Youssef El Faqir El Rhazoui
  Date: 13/Dec/2018
  Distributed under the terms of the GPLv3 license.
-
 """
+
 import abc
+import pandas as pd
 from igraph import Graph, ClusterColoringPalette
 from colormap.colors import rgb2hex
 
@@ -23,24 +23,19 @@ class BaseNetwork(metaclass=abc.ABCMeta):
 
 
     @abc.abstractmethod
-    def generate_from_pandas(self, df, lower_bound, upper_bound):
+    def generate_from_pandas(self, df: pd.DataFrame):
         """
         Generates a graph from a pandas data
 
         Parameters:
             -df: A pandas object with the wiki info (read from csv),
                    must be order by timestamp
-
-            -lower_bound: a formated string "%Y-%m-%d %H:%M:%S", 
-                    to filter by time the df 
-            -upper_bound: a formated string "%Y-%m-%d %H:%M:%S", 
-                    to filter by time the df
         """
         pass
 
 
     @abc.abstractmethod
-    def get_metric_dataframe(self, metric: str):
+    def get_metric_dataframe(self, metric: str) -> dict:
         """
         This function generates a dateframe with 2 cols, the node name
         and a node metric value.
@@ -82,16 +77,16 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         Returns a dict with the metrics, the dict must get the following structure:
             dict = {
                 'Metric name well formatted': {
-                    'key': 'vertex's key',
-                    'max': 'graphs key',
-                    'min': 'graphs key'
+                    'key': 'a vertex key',
+                    'max': 'a graph key',
+                    'min': 'a graph key'
                 }
             }
         """
         pass
 
 
-    def to_cytoscape_dict(self):
+    def to_cytoscape_dict(self) -> dict:
         """
         Transform a network to cytoscape dict
 
@@ -134,7 +129,7 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         self.calculate_communities()
 
 
-    def write_gml(self, file):
+    def write_gml(self, file: str):
         """
         Writes a gml file
         Parameters:
@@ -205,7 +200,7 @@ class BaseNetwork(metaclass=abc.ABCMeta):
             self.graph['assortativity_degree'] = assortativity
 
 
-    def get_degree_distribution(self):
+    def get_degree_distribution(self) -> (list, list):
         """
         It returns the degree distribution
         """
@@ -221,11 +216,55 @@ class BaseNetwork(metaclass=abc.ABCMeta):
 
         return (k, p_k)
 
-    
-    def build_network(self, df, lower_bound: str, upper_bound: str):
+
+    def add_others(self, df):
+        """
+        It's used to add specific things (e.g. other metrics)
+        """
+        pass
+
+
+    def build_network(self, df: pd.DataFrame, lower_bound: str, upper_bound: str):
         """
         This method is used to generate the network and its metrics and attrs
         """
-        self.generate_from_pandas(df, lower_bound, upper_bound)
-        self.add_graph_attrs()
+        df = self.filter_by_time(df, lower_bound, upper_bound)
+        self.generate_from_pandas(df)
         self.calculate_metrics()
+        self.add_others(df)
+        self.add_graph_attrs()
+
+
+    def remove_non_article_data(self, df: pd.DataFrame) -> pd.DataFrame:
+       """
+          Filter out all edits made on non-article pages.
+
+          df -- data to be filtered.
+          Return a dataframe derived from the original but with all the
+             editions made in non-article pages removed
+       """
+       # namespace 0 => wiki article
+       return df[df['page_ns'] == 0]
+
+
+    def remove_non_talk_data(self, df: pd.DataFrame) -> pd.DataFrame:
+       """
+          Filter out all edits made on non-talk pages.
+
+          df -- data to be filtered.
+          Return a dataframe derived from the original but with all the
+             editions made in non-talk pages removed
+       """
+       # namespace 1 => wiki talk pages
+       return df[df['page_ns'] == 1]
+
+
+    def filter_by_time(self, df: pd.DataFrame, lower_bound = '',
+        upper_bound = '') -> pd.DataFrame:
+        
+        dff = df
+        if lower_bound and upper_bound:
+            dff = df[lower_bound <= df['timestamp']]
+            dff = df[df['timestamp'] <= upper_bound]
+
+        return dff

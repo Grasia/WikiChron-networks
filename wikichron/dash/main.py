@@ -290,18 +290,15 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
     def dropdown_color_metric_selector(network_code):
         dict_metrics = net_factory.get_secondary_metrics(network_code)
         options = []
-        default = {}
         for k in dict_metrics.keys():
             options.append({
                 'label': k,
                 'value': k
             })
-            default = k
 
         return dcc.Dropdown(
             id='dd-color-metric',
-            options=options,
-            value=default
+            options=options
         )
 
 

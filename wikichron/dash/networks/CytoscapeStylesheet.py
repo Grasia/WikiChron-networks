@@ -44,17 +44,17 @@ class CytoscapeStylesheet():
 			self.cy_stylesheet = cy_stylesheet
 
 
-	def color_nodes_default(self):
-		self.cy_stylesheet[0]['style']['background-color'] = self.N_DEFAULT_COLOR
+	def color_nodes_default(self, color):
+		self.cy_stylesheet[0]['style']['background-color'] = color
 
 
 	def color_nodes(self, network, metric):
 		if not metric:
-			self.color_nodes_default()
+			self.color_nodes_default(self.N_DEFAULT_COLOR)
 			return
 
-		if metric['max'] == metric['min']:
-			self.color_nodes_default()
+		if network[metric['max']] == network[metric['min']]:
+			self.color_nodes_default(self.N_MIN_COLOR)
 			return
 
 		self.cy_stylesheet[0]['style']['background-color'] = \

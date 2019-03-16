@@ -42,9 +42,10 @@ class CoEditingNetwork(BaseNetwork):
     CODE = 'co_editing_network'
 
     AVAILABLE_METRICS = {
-        'Page Rank': 'page_rank',
-        'Number of Edits': 'num_edits',
+        'Pages Edit': 'num_edits',
+        'Talk Pages Edit': 'talk_edits',
         'Betweenness': 'betweenness',
+        'Page Rank': 'page_rank',
         'Cluster': 'cluster'
     }
 
@@ -53,6 +54,11 @@ class CoEditingNetwork(BaseNetwork):
             'key': 'birth',
             'max': 'max_birth',
             'min': 'min_birth'
+        },
+        'Talk Edits': {
+            'key': 'talk_edits',
+            'max': 'max_talk_edits',
+            'min': 'min_talk_edits'
         }
     }
 
@@ -68,27 +74,17 @@ class CoEditingNetwork(BaseNetwork):
         super().__init__(is_directed = is_directed, graph = graph)
 
 
-    def generate_from_pandas(self, df, lower_bound = '', upper_bound = ''):
+    def generate_from_pandas(self, df):
         user_per_page = {}
         mapper_v = {}
         mapper_e = {}
         count = 0
-        self.graph['first_entry'] = 'No entries'
-        self.graph['last_entry'] = 'No entries'
 
-        if lower_bound:
-            df = df[lower_bound <= df['timestamp']]
-            df = df[df['timestamp'] <= upper_bound]
-        df = self.remove_non_article_data(df)
+        dff = self.remove_non_article_data(df)
 
-        for index, r in df.iterrows():
+        for _, r in dff.iterrows():
             if r['contributor_name'] == 'Anonymous':
                 continue
-
-            if 'No entries' == self.graph['first_entry']:
-                self.graph['first_entry'] = r['timestamp']
-
-            self.graph['last_entry'] = r['timestamp']
 
             # Nodes
             if not r['contributor_id'] in mapper_v:
@@ -118,7 +114,7 @@ class CoEditingNetwork(BaseNetwork):
                             [r['timestamp']]
         count = 0
         # Edges
-        for k, p in user_per_page.items():
+        for _, p in user_per_page.items():
             aux = {}
             for k_i, v_i in p.items():
                 for k_j, v_j in aux.items():
@@ -186,9 +182,28 @@ class CoEditingNetwork(BaseNetwork):
         if 'birth' in self.graph.vs.attributes():
             self.graph['max_birth'] = max(self.graph.vs['birth'])
             self.graph['min_birth'] = min(self.graph.vs['birth'])
+        if 'talk_edits' in self.graph.vs.attributes():
+            self.graph['max_talk_edits'] = max(self.graph.vs['talk_edits'])
+            self.graph['min_talk_edits'] = min(self.graph.vs['talk_edits'])
         if 'weight' in self.graph.es.attributes():
             self.graph['max_edge_size'] = max(self.graph.es['weight'])
             self.graph['min_edge_size'] = min(self.graph.es['weight'])
+
+
+    def add_others(self, df):
+        self.calculate_talk_edits(df)
+
+
+    def calculate_talk_edits(self, df):
+        dff = self.remove_non_talk_data(df)
+        mapper = {self.graph.vs[i]['id']: i for i in range(len(self.graph.vs['id']))}
+        talk_edits = [0 for i in range(len(self.graph.vs['id']))]
+        for _, row in dff.iterrows():
+            if row['contributor_id'] in mapper.keys():
+                talk_edits[mapper[row['contributor_id']]] += 1
+
+        self.graph.vs['talk_edits'] = talk_edits
+
 
     def calculate_w_time(self, tsp1, tsp2):
         """
@@ -214,15 +229,3 @@ class CoEditingNetwork(BaseNetwork):
 
         return 1 + numpy.interp(
             self.TIME_DIV / t_gap, [1, self.TIME_BOUND], [0, 1])
-
-
-    def remove_non_article_data(self, df):
-       """
-          Filter out all edits made on non-article pages.
-
-          df -- data to be filtered.
-          Return a dataframe derived from the original but with all the
-             editions made in non-article pages removed
-       """
-       # namespace 0 => wiki article
-       return df[df['page_ns'] == 0]

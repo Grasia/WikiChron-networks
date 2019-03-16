@@ -37,9 +37,10 @@ class TalkPagesNetwork(BaseNetwork):
     CODE = 'talk_pages_network'
 
     AVAILABLE_METRICS = {
-        'Page Rank': 'page_rank',
-        'Number of Edits': 'num_edits',
+        'Talk Pages Edit': 'num_edits',
+        'Pages Edit': 'num_edits',
         'Betweenness': 'betweenness',
+        'Page Rank': 'page_rank',
         'Cluster': 'cluster'
     }
 
@@ -55,27 +56,17 @@ class TalkPagesNetwork(BaseNetwork):
         super().__init__(is_directed = is_directed, graph = graph)
 
     
-    def generate_from_pandas(self, df, lower_bound = '', upper_bound = ''):
+    def generate_from_pandas(self, df):
         user_per_page = {}
         mapper_v = {}
         mapper_e = {}
         count = 0
-        self.graph['first_entry'] = 'No entries'
-        self.graph['last_entry'] = 'No entries'
 
-        if lower_bound:
-            df = df[lower_bound <= df['timestamp']]
-            df = df[df['timestamp'] <= upper_bound]
-        df = self.remove_non_talk_data(df)
+        dff = self.remove_non_talk_data(df)
 
-        for index, r in df.iterrows():
+        for _, r in dff.iterrows():
             if r['contributor_name'] == 'Anonymous':
                 continue
-
-            if 'No entries' == self.graph['first_entry']:
-                self.graph['first_entry'] = r['timestamp']
-
-            self.graph['last_entry'] = r['timestamp']
 
             # Nodes
             if not r['contributor_id'] in mapper_v:
@@ -102,10 +93,10 @@ class TalkPagesNetwork(BaseNetwork):
 
         count = 0
         # Edges
-        for k, p in user_per_page.items():
+        for _, p in user_per_page.items():
             aux = {}
             for k_i, v_i in p.items():
-                for k_j, v_j in aux.items():
+                for k_j in aux.keys():
                     if f'{k_i}{k_j}' in mapper_e:
                         self.graph.es[mapper_e[f'{k_i}{k_j}']]['weight'] += 1
                         continue
@@ -161,15 +152,3 @@ class TalkPagesNetwork(BaseNetwork):
         if 'weight' in self.graph.es.attributes():
             self.graph['max_edge_size'] = max(self.graph.es['weight'])
             self.graph['min_edge_size'] = min(self.graph.es['weight'])
-
-
-    def remove_non_talk_data(self, df):
-       """
-          Filter out all edits made on non-talk pages.
-
-          df -- data to be filtered.
-          Return a dataframe derived from the original but with all the
-             editions made in non-talk pages removed
-       """
-       # namespace 1 => wiki talk pages
-       return df[df['page_ns'] == 1]
