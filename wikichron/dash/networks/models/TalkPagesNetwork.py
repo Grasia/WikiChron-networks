@@ -38,10 +38,8 @@ class TalkPagesNetwork(BaseNetwork):
 
     AVAILABLE_METRICS = {
         'Talk Pages Edit': 'num_edits',
-        'Pages Edit': 'num_edits',
         'Betweenness': 'betweenness',
-        'Page Rank': 'page_rank',
-        'Cluster': 'cluster'
+        'Page Rank': 'page_rank'
     }
 
     SECONDARY_METRICS = {}
@@ -49,6 +47,8 @@ class TalkPagesNetwork(BaseNetwork):
     USER_INFO = {
         'User ID': 'id',
         'User Name': 'label',
+        'Cluster': 'cluster',
+        'Pages Edit': 'num_edits'
     }
 
 
@@ -120,7 +120,7 @@ class TalkPagesNetwork(BaseNetwork):
     def get_metric_dataframe(self, metric):
         if self.AVAILABLE_METRICS[metric] in self.graph.vs.attributes()\
             and 'label' in self.graph.vs.attributes():
-            
+
             df = pd.DataFrame({
                     'User': self.graph.vs['label'],
                     metric: self.graph.vs[self.AVAILABLE_METRICS[metric]]

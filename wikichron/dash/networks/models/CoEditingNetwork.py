@@ -41,12 +41,11 @@ class CoEditingNetwork(BaseNetwork):
     NAME = 'Co-Editing'
     CODE = 'co_editing_network'
 
+    #only metrics for the ranking
     AVAILABLE_METRICS = {
         'Pages Edit': 'num_edits',
-        'Talk Pages Edit': 'talk_edits',
         'Betweenness': 'betweenness',
-        'Page Rank': 'page_rank',
-        'Cluster': 'cluster'
+        'Page Rank': 'page_rank'
     }
 
     SECONDARY_METRICS = {
@@ -65,8 +64,10 @@ class CoEditingNetwork(BaseNetwork):
     USER_INFO = {
         'User ID': 'id',
         'User Name': 'label',
+        'Cluster': 'cluster',
         'First Edit': 'first_edit',
-        'Last Edit': 'last_edit'
+        'Last Edit': 'last_edit',
+        'Talk Pages Edit': 'talk_edits',
     }
 
 

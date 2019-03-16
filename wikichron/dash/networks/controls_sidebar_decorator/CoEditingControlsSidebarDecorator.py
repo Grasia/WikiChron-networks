@@ -207,13 +207,18 @@ class CoEditingControlsSidebarDecorator(BaseControlsSidebarDecorator):
             [Input('show-page-rank', 'n_clicks_timestamp'),
             Input('show-edits', 'n_clicks_timestamp'),
             Input('show-betweenness', 'n_clicks_timestamp')],
-            [State('network-ready', 'value')]
+            [State('network-ready', 'value'),
+            State('initial-selection', 'children')]
         )
-        def select_metric(tm_pr, tm_edits, tm_bet, ready):
+        def select_metric(tm_pr, tm_edits, tm_bet, ready, selection_json):
             if not ready:
                 raise PreventUpdate()
 
-            tms = [int(tm_pr), int(tm_edits), int(tm_bet)]
-            tm_metrics = {key:value for key, value in zip(tms, CoEditingNetwork.get_available_metrics().keys())}
+            selection = json.loads(selection_json)
+            network_code = selection['network']
+
+            tms = [int(tm_edits), int(tm_bet), int(tm_pr)]
+            metrics = net_factory.get_available_metrics(network_code).keys()
+            tm_metrics = {key:value for key, value in zip(tms, metrics)}
             max_key = max(tm_metrics, key=int)
             return tm_metrics[max_key]
