@@ -10,7 +10,7 @@
 
 class CytoscapeStylesheet():
 
-	N_DEFAULT_COLOR = '#607D8B'
+	N_DEFAULT_COLOR = '#78909C'
 	N_MIN_COLOR = '#64B5F6'
 	N_MAX_COLOR = '#0D47A1'
 	N_DEFAULT_SIZE = '30'
