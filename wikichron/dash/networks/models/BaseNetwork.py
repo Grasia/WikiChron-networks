@@ -35,7 +35,7 @@ class BaseNetwork(metaclass=abc.ABCMeta):
 
 
     @abc.abstractmethod
-    def get_metric_dataframe(self, metric: str) -> dict:
+    def get_metric_dataframe(self, metric: str) -> pd.DataFrame:
         """
         This function generates a dateframe with 2 cols, the node name
         and a node metric value.
@@ -228,10 +228,10 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         """
         This method is used to generate the network and its metrics and attrs
         """
-        df = self.filter_by_time(df, lower_bound, upper_bound)
-        self.generate_from_pandas(df)
+        dff = self.filter_by_time(df, lower_bound, upper_bound)
+        self.generate_from_pandas(dff)
         self.calculate_metrics()
-        self.add_others(df)
+        self.add_others(dff)
         self.add_graph_attrs()
 
 
@@ -265,6 +265,6 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         dff = df
         if lower_bound and upper_bound:
             dff = df[lower_bound <= df['timestamp']]
-            dff = df[df['timestamp'] <= upper_bound]
+            dff = dff[dff['timestamp'] <= upper_bound]
 
         return dff

@@ -49,7 +49,7 @@ class CytoscapeStylesheet():
 
 
 	def color_nodes(self, network, metric):
-		if not metric:
+		if not metric or not all(k in network for k in (metric['max'], metric['min'])):
 			self.color_nodes_default(self.N_DEFAULT_COLOR)
 			return
 

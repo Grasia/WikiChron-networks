@@ -410,8 +410,10 @@ def bind_callbacks(app):
             df = df.sort_values(sort_set[0]['column_id'],
                 ascending=sort_set[0]['direction'] == 'asc',
                 inplace=False)
-        else:
+        elif not df.empty:
             df = df.sort_values(metric, ascending=False)
+        else:
+            return []
 
         return df.iloc[
                 pag_set['current_page']*pag_set['page_size']:

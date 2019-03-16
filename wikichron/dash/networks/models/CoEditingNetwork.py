@@ -147,15 +147,17 @@ class CoEditingNetwork(BaseNetwork):
         return
 
 
-    def get_metric_dataframe(self, metric: str) -> pd.DataFrame:
-        if self.AVAILABLE_METRICS[metric] in self.graph.vs.attributes():
+    def get_metric_dataframe(self, metric):
+        if self.AVAILABLE_METRICS[metric] in self.graph.vs.attributes()\
+            and 'label' in self.graph.vs.attributes():
+
             df = pd.DataFrame({
                     'User': self.graph.vs['label'],
                     metric: self.graph.vs[self.AVAILABLE_METRICS[metric]]
                     })
             return df
 
-        return None
+        return pd.DataFrame()
 
 
     @classmethod
@@ -195,6 +197,9 @@ class CoEditingNetwork(BaseNetwork):
 
 
     def calculate_talk_edits(self, df):
+        if 'id' not in self.graph.vs.attributes():
+            return
+
         dff = self.remove_non_talk_data(df)
         mapper = {self.graph.vs[i]['id']: i for i in range(len(self.graph.vs['id']))}
         talk_edits = [0 for i in range(len(self.graph.vs['id']))]

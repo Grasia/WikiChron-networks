@@ -117,15 +117,17 @@ class TalkPagesNetwork(BaseNetwork):
         return
     
 
-    def get_metric_dataframe(self, metric: str) -> pd.DataFrame:
-        if self.AVAILABLE_METRICS[metric] in self.graph.vs.attributes():
+    def get_metric_dataframe(self, metric):
+        if self.AVAILABLE_METRICS[metric] in self.graph.vs.attributes()\
+            and 'label' in self.graph.vs.attributes():
+            
             df = pd.DataFrame({
                     'User': self.graph.vs['label'],
                     metric: self.graph.vs[self.AVAILABLE_METRICS[metric]]
                     })
             return df
 
-        return None
+        return pd.DataFrame()
 
 
     @classmethod
