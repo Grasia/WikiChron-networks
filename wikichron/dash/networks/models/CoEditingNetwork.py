@@ -84,14 +84,11 @@ class CoEditingNetwork(BaseNetwork):
         dff = self.remove_non_article_data(df)
 
         for _, r in dff.iterrows():
-            if r['contributor_name'] == 'Anonymous':
-                continue
-
             # Nodes
-            if not r['contributor_id'] in mapper_v:
+            if not int(r['contributor_id']) in mapper_v:
                 self.graph.add_vertex(count)
-                mapper_v[r['contributor_id']] = count
-                self.graph.vs[count]['id'] = r['contributor_id']
+                mapper_v[int(r['contributor_id'])] = count
+                self.graph.vs[count]['id'] = int(r['contributor_id'])
                 self.graph.vs[count]['label'] = r['contributor_name']
                 self.graph.vs[count]['num_edits'] = 0
                 self.graph.vs[count]['first_edit'] = r['timestamp']
@@ -99,53 +96,35 @@ class CoEditingNetwork(BaseNetwork):
                     str(r['timestamp']), "%Y-%m-%d %H:%M:%S").strftime('%s'))
                 count += 1
 
-            self.graph.vs[mapper_v[r['contributor_id']]]['num_edits'] += 1
-            self.graph.vs[mapper_v[r['contributor_id']]]['last_edit'] = r['timestamp']
+            self.graph.vs[mapper_v[int(r['contributor_id'])]]['num_edits'] += 1
+            self.graph.vs[mapper_v[int(r['contributor_id'])]]['last_edit'] = r['timestamp']
 
             # A page gets serveral contributors
-            if not r['page_id'] in user_per_page:
-                user_per_page[r['page_id']] = \
-                                {r['contributor_id']: [r['timestamp']]}
+            if not int(r['page_id']) in user_per_page:
+                user_per_page[int(r['page_id'])] = {int(r['contributor_id'])}
             else:
-                if r['contributor_id'] in user_per_page[r['page_id']]:
-                    user_per_page[r['page_id']][r['contributor_id']]\
-                                .append(r['timestamp'])
-                else:
-                    user_per_page[r['page_id']][r['contributor_id']] = \
-                            [r['timestamp']]
+                if int(r['contributor_id']) not in user_per_page[int(r['page_id'])]:
+                    user_per_page[int(r['page_id'])].add(int(r['contributor_id']))
+
         count = 0
         # Edges
         for _, p in user_per_page.items():
-            aux = {}
-            for k_i, v_i in p.items():
-                for k_j, v_j in aux.items():
-                    if f'{k_i}{k_j}' in mapper_e:
-                        self.graph.es[mapper_e[f'{k_i}{k_j}']]['weight'] += 1
-                        self.graph.es[mapper_e[f'{k_i}{k_j}']]['w_time'] += \
-                            self.calculate_w_time(v_i[-1], v_j[-1])
+            for u1 in p:
+                for u2 in p:
+                    if u1 == u2:
                         continue
-                    if f'{k_j}{k_i}' in mapper_e:
-                        self.graph.es[mapper_e[f'{k_j}{k_i}']]['weight'] += 1
-                        self.graph.es[mapper_e[f'{k_j}{k_i}']]['w_time'] += \
-                            self.calculate_w_time(v_j[-1], v_i[-1])
+                    k_edge = (u1 << 32) + u2
+                    if k_edge in mapper_e:
+                        self.graph.es[mapper_e[k_edge]]['weight'] += 1
                         continue
 
-                    self.graph.add_edge(mapper_v[k_i], mapper_v[k_j])
-                    mapper_e[f'{k_i}{k_j}'] = count
+                    self.graph.add_edge(mapper_v[u1], mapper_v[u2])
+                    mapper_e[k_edge] = count
                     count += 1
-                    self.graph.es[mapper_e[f'{k_i}{k_j}']]['weight'] = 1
-                    self.graph.es[mapper_e[f'{k_i}{k_j}']]['w_time'] = \
-                            self.calculate_w_time(v_i[-1], v_j[-1])
-                    self.graph.es[mapper_e[f'{k_i}{k_j}']]['id'] = f'{k_i}{k_j}'
-                    self.graph.es[mapper_e[f'{k_i}{k_j}']]['source'] = k_i
-                    self.graph.es[mapper_e[f'{k_i}{k_j}']]['target'] = k_j
-
-                aux[k_i] = v_i
-
-        for e in self.graph.es:
-            e['w_time'] = e['w_time'] / e['weight']
-
-        return
+                    self.graph.es[mapper_e[k_edge]]['weight'] = 1
+                    self.graph.es[mapper_e[k_edge]]['id'] = k_edge
+                    self.graph.es[mapper_e[k_edge]]['source'] = u1
+                    self.graph.es[mapper_e[k_edge]]['target'] = u2
 
 
     def get_metric_dataframe(self, metric):
@@ -195,29 +174,3 @@ class CoEditingNetwork(BaseNetwork):
 
     def add_others(self, df):
         self.calculate_edits(df, 'talk')
-
-
-    def calculate_w_time(self, tsp1, tsp2):
-        """
-        Calculates the weight based on time between 2 editions
-
-        Parameters:
-            -tsp1: a timestamp
-            -tsp2: a timestamp
-
-        Returns: a number which represent the w_time
-        """
-        t1 = int(datetime.strptime(str(tsp1),
-            "%Y-%m-%d %H:%M:%S").strftime('%s'))
-        t2 = int(datetime.strptime(str(tsp2),
-            "%Y-%m-%d %H:%M:%S").strftime('%s'))
-        t_gap = math.fabs(t1 - t2)
-
-        if t_gap == 0:
-            return 2
-
-        if t_gap > self.TIME_DIV:
-            return self.TIME_DIV / t_gap
-
-        return 1 + numpy.interp(
-            self.TIME_DIV / t_gap, [1, self.TIME_BOUND], [0, 1])

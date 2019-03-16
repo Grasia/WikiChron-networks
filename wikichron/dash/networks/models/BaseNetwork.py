@@ -229,6 +229,7 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         This method is used to generate the network and its metrics and attrs
         """
         dff = self.filter_by_time(df, lower_bound, upper_bound)
+        dff = self.filter_anonymous(dff)
         self.generate_from_pandas(dff)
         self.calculate_metrics()
         self.add_others(dff)
@@ -240,8 +241,16 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         
         dff = df
         if lower_bound and upper_bound:
-            dff = df[lower_bound <= df['timestamp']]
+            dff = dff[lower_bound <= dff['timestamp']]
             dff = dff[dff['timestamp'] <= upper_bound]
+
+        return dff
+
+
+    def filter_anonymous(self, df: pd.DataFrame) -> pd.DataFrame:
+        dff = df
+        if not dff.empty:
+            dff = df['Anonymous' != df['contributor_name']]
 
         return dff
 
@@ -298,8 +307,9 @@ class BaseNetwork(metaclass=abc.ABCMeta):
             dff = self.remove_non_article_data(df)
             key = f'{type}_{key}'
         elif type == 'user_talk':
-            dff = self.remove_non_user_talk_data(df)
-            key = f'{type}_{key}'
+            raise Exception(f'type: {type} is not implemented yet')
+            # dff = self.remove_non_user_talk_data(df)
+            # key = f'{type}_{key}'
         else:
             raise Exception(f'type: {type} is not defined')
 
