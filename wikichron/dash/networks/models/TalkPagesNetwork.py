@@ -37,11 +37,13 @@ class TalkPagesNetwork(BaseNetwork):
     CODE = 'talk_pages_network'
 
     AVAILABLE_METRICS = {
-            'Page Rank': 'page_rank',
-            'Number of Edits': 'num_edits',
-            'Betweenness': 'betweenness',
-            'Cluster': 'cluster'
-        }
+        'Page Rank': 'page_rank',
+        'Number of Edits': 'num_edits',
+        'Betweenness': 'betweenness',
+        'Cluster': 'cluster'
+    }
+
+    SECONDARY_METRICS = {}
 
     USER_INFO = {
         'User ID': 'id',
@@ -143,6 +145,11 @@ class TalkPagesNetwork(BaseNetwork):
     @classmethod
     def get_user_info(cls) -> dict:
         return cls.USER_INFO
+
+
+    @classmethod
+    def get_secondary_metrics(cls) -> dict:
+        return cls.SECONDARY_METRICS
 
 
     def add_graph_attrs(self):

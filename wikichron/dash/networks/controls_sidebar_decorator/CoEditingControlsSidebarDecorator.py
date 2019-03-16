@@ -24,6 +24,7 @@ from .BaseControlsSidebarDecorator import BaseControlsSidebarDecorator
 from networks.CytoscapeStylesheet import CytoscapeStylesheet
 from networks.models.CoEditingNetwork import CoEditingNetwork
 import data_controller
+import networks.models.networks_generator as net_factory
 
 global debug
 debug = True if os.environ.get('FLASK_ENV') == 'development' else False
@@ -129,32 +130,42 @@ class CoEditingControlsSidebarDecorator(BaseControlsSidebarDecorator):
             [Input('cytoscape', 'elements'),
             Input('show-labels', 'n_clicks'),
             Input('color-cluster', 'n_clicks'),
-            Input('highlight-node', 'value')],
-            [State('network-ready', 'value')]
+            Input('highlight-node', 'value'),
+            Input('dd-color-metric', 'value')],
+            [State('network-ready', 'value'),
+            State('initial-selection', 'children')]
         )
-        def update_stylesheet(_, lb_clicks, com_clicks, nodes_selc, cy_network):
+        def update_stylesheet(_, lb_clicks, com_clicks, nodes_selc, dd_val, 
+            cy_network, selection_json):
 
             if not cy_network:
                 raise PreventUpdate()
 
-            co_stylesheet = CytoscapeStylesheet()
+            selection = json.loads(selection_json)
+            network_code = selection['network']
+
+            stylesheet = CytoscapeStylesheet()
+            metric = {}
+
+            if dd_val:
+                metric = net_factory.get_secondary_metrics(network_code)[dd_val]
 
             if not nodes_selc:
-                co_stylesheet.all_transformations(cy_network)
+                stylesheet.all_transformations(cy_network, metric)
             else:
-                co_stylesheet.highlight_nodes(cy_network, nodes_selc)
+                stylesheet.highlight_nodes(cy_network, nodes_selc)
 
             if lb_clicks and lb_clicks % 2:
-                co_stylesheet.set_label('label')
+                stylesheet.set_label('label')
             else:
-                co_stylesheet.set_label('')
+                stylesheet.set_label('')
 
             if com_clicks and com_clicks % 2 == 1:
-                co_stylesheet.color_nodes_by_cluster()
+                stylesheet.color_nodes_by_cluster()
             else:
-                co_stylesheet.color_nodes(cy_network)
+                stylesheet.color_nodes(cy_network, metric)
 
-            return co_stylesheet.cy_stylesheet
+            return stylesheet.cy_stylesheet
 
 
         @app.callback(

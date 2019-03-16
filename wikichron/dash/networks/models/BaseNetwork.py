@@ -52,7 +52,7 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         pass
 
     
-    @abc.abstractmethod
+    @abc.abstractclassmethod
     def get_available_metrics(self) -> dict:
         """
         Return a dict with the metrics
@@ -60,7 +60,7 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         pass
 
 
-    @abc.abstractmethod
+    @abc.abstractclassmethod
     def get_user_info(self) -> dict:
         """
         Return a dict with the user info
@@ -72,6 +72,21 @@ class BaseNetwork(metaclass=abc.ABCMeta):
     def add_graph_attrs(self):
         """
         Calculates and adds the graph attrs 
+        """
+        pass
+
+
+    @abc.abstractclassmethod
+    def get_secondary_metrics(cls) -> dict:
+        """
+        Returns a dict with the metrics, the dict must get the following structure:
+            dict = {
+                'Metric name well formatted': {
+                    'key': 'vertex's key',
+                    'max': 'graphs key',
+                    'min': 'graphs key'
+                }
+            }
         """
         pass
 
