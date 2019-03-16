@@ -43,7 +43,7 @@ class CoEditingNetwork(BaseNetwork):
 
     #only metrics for the ranking
     AVAILABLE_METRICS = {
-        'Pages Edit': 'num_edits',
+        'Article Edits': 'num_edits',
         'Betweenness': 'betweenness',
         'Page Rank': 'page_rank'
     }
@@ -194,21 +194,7 @@ class CoEditingNetwork(BaseNetwork):
 
 
     def add_others(self, df):
-        self.calculate_talk_edits(df)
-
-
-    def calculate_talk_edits(self, df):
-        if 'id' not in self.graph.vs.attributes():
-            return
-
-        dff = self.remove_non_talk_data(df)
-        mapper = {self.graph.vs[i]['id']: i for i in range(len(self.graph.vs['id']))}
-        talk_edits = [0 for i in range(len(self.graph.vs['id']))]
-        for _, row in dff.iterrows():
-            if row['contributor_id'] in mapper.keys():
-                talk_edits[mapper[row['contributor_id']]] += 1
-
-        self.graph.vs['talk_edits'] = talk_edits
+        self.calculate_edits(df, 'talk')
 
 
     def calculate_w_time(self, tsp1, tsp2):

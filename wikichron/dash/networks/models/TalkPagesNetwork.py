@@ -23,6 +23,7 @@ class TalkPagesNetwork(BaseNetwork):
     Arguments:
         - Node:
             * num_edits: The editions number in all talk pages
+            * article_edits: edits in article pages
             * id: The user id in the wiki
             * label: the user name in the wiki
         
@@ -42,13 +43,19 @@ class TalkPagesNetwork(BaseNetwork):
         'Page Rank': 'page_rank'
     }
 
-    SECONDARY_METRICS = {}
+    SECONDARY_METRICS = {
+        'Article Edits': {
+            'key': 'article_edits',
+            'max': 'max_article_edits',
+            'min': 'min_article_edits'
+        }
+    }
 
     USER_INFO = {
         'User ID': 'id',
         'User Name': 'label',
         'Cluster': 'cluster',
-        'Pages Edit': 'num_edits'
+        'Article Edits': 'article_edits'
     }
 
 
@@ -151,6 +158,13 @@ class TalkPagesNetwork(BaseNetwork):
         if 'num_edits' in self.graph.vs.attributes():
             self.graph['max_node_size'] = max(self.graph.vs['num_edits'])
             self.graph['min_node_size'] = min(self.graph.vs['num_edits'])
+        if 'article_edits' in self.graph.vs.attributes():
+            self.graph['max_article_edits'] = max(self.graph.vs['article_edits'])
+            self.graph['min_article_edits'] = min(self.graph.vs['article_edits'])
         if 'weight' in self.graph.es.attributes():
             self.graph['max_edge_size'] = max(self.graph.es['weight'])
             self.graph['min_edge_size'] = min(self.graph.es['weight'])
+
+    
+    def add_others(self, df):
+        self.calculate_edits(df, 'article')

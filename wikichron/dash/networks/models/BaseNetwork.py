@@ -235,6 +235,17 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         self.add_graph_attrs()
 
 
+    def filter_by_time(self, df: pd.DataFrame, lower_bound = '',
+        upper_bound = '') -> pd.DataFrame:
+        
+        dff = df
+        if lower_bound and upper_bound:
+            dff = df[lower_bound <= df['timestamp']]
+            dff = dff[dff['timestamp'] <= upper_bound]
+
+        return dff
+
+
     def remove_non_article_data(self, df: pd.DataFrame) -> pd.DataFrame:
        """
           Filter out all edits made on non-article pages.
@@ -259,12 +270,43 @@ class BaseNetwork(metaclass=abc.ABCMeta):
        return df[df['page_ns'] == 1]
 
 
-    def filter_by_time(self, df: pd.DataFrame, lower_bound = '',
-        upper_bound = '') -> pd.DataFrame:
-        
-        dff = df
-        if lower_bound and upper_bound:
-            dff = df[lower_bound <= df['timestamp']]
-            dff = dff[dff['timestamp'] <= upper_bound]
+    def remove_non_user_talk_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+          Filter out all edits made on non-user-talk pages.
 
-        return dff
+          df -- data to be filtered.
+          Return a dataframe derived from the original but with all the
+             editions made in non-user-talk pages removed
+        """
+        # namespace 3 => wiki user talk pages
+        return df[df['page_ns'] == 3]
+
+    
+    def calculate_edits(self, df: pd.DataFrame, type: str):
+        """
+        This function adds as a vertex attr the edits from other namespace
+        type parameter only accept {talk, article, user_talk}
+        """
+        if 'id' not in self.graph.vs.attributes():
+            return
+
+        key = 'edits'
+        if type == 'talk':
+            dff = self.remove_non_talk_data(df)
+            key = f'{type}_{key}'
+        elif type == 'article':
+            dff = self.remove_non_article_data(df)
+            key = f'{type}_{key}'
+        elif type == 'user_talk':
+            dff = self.remove_non_user_talk_data(df)
+            key = f'{type}_{key}'
+        else:
+            raise Exception(f'type: {type} is not defined')
+
+        mapper = {self.graph.vs[i]['id']: i for i in range(len(self.graph.vs['id']))}
+        edits = [0 for i in range(len(self.graph.vs['id']))]
+        for _, row in dff.iterrows():
+            if row['contributor_id'] in mapper.keys():
+                edits[mapper[row['contributor_id']]] += 1
+
+        self.graph.vs[key] = edits
