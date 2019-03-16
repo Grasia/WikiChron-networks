@@ -316,7 +316,7 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         mapper = {self.graph.vs[i]['id']: i for i in range(len(self.graph.vs['id']))}
         edits = [0 for i in range(len(self.graph.vs['id']))]
         for _, row in dff.iterrows():
-            if row['contributor_id'] in mapper.keys():
-                edits[mapper[row['contributor_id']]] += 1
+            if int(row['contributor_id']) in mapper.keys():
+                edits[mapper[int(row['contributor_id'])]] += 1
 
         self.graph.vs[key] = edits
