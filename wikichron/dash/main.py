@@ -297,7 +297,7 @@ def generate_main_content(wikis_arg, network_type_arg, query_string):
     selected_network_name = network_type_arg['name']
 
     controls_sidebar = ControlsSidebar()
-    sidebar_decorator = factory_sidebar_decorator(network_type_code, controls_sidebar)
+    sidebar_decorator = factory_sidebar_decorator('co_editing_network', controls_sidebar)
     sidebar_decorator.add_all_sections()
 
     share_url_path = f'{config["APP_HOSTNAME"]}{config["DASH_BASE_PATHNAME"]}{query_string}'

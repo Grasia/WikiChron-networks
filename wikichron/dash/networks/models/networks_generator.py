@@ -14,8 +14,7 @@ from .CoEditingNetwork import CoEditingNetwork
 from .TalkPagesNetwork import TalkPagesNetwork
 
 def create_available_networks():
-    networks = []
-    networks.append(CoEditingNetwork())
+    networks = [CoEditingNetwork, TalkPagesNetwork]
     return networks
 
 def factory_network(network_code):

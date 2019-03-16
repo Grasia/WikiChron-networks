@@ -12,7 +12,7 @@ class CytoscapeStylesheet():
 
 	HIGHLIGHT_NODE = {
 			"background-color": "#B10DC9",
-			"border-color": "purple",
+			"border-color": "black",
 			"border-width": 2,
 			"border-opacity": 1,
 			"opacity": 1,
@@ -42,11 +42,18 @@ class CytoscapeStylesheet():
 		self.cy_stylesheet[0]['style']['background-color'] = 'data(cluster_color)'
 
 
+	def size_nodes_default(self):
+		self.cy_stylesheet[0]['style']['height'] = '30'
+		self.cy_stylesheet[0]['style']['width'] = '30'
+		self.size_font_labels_default()
+
 	def size_nodes(self, network):
+		if not all(k in network for k in ('min_node_size', 'max_node_size')):
+			self.size_nodes_default()
+			return
+
 		if network['min_node_size'] == network['max_node_size']:
-			self.cy_stylesheet[0]['style']['height'] = '30'
-			self.cy_stylesheet[0]['style']['width'] = '30'
-			self.size_font_labels(network)
+			self.size_nodes_default()
 			return
 
 		self.cy_stylesheet[0]['style']['height'] = \
@@ -58,11 +65,19 @@ class CytoscapeStylesheet():
 			{network['max_node_size']}, 10, 60)"
 
 		self.size_font_labels(network)
-		
+
+
+	def size_font_labels_default(self):	
+		self.cy_stylesheet[0]['style']['font-size'] = '12'
+
 
 	def size_font_labels(self, network):
+		if not all(k in network for k in ('min_node_size', 'max_node_size')):
+			self.size_font_labels_default()
+			return
+
 		if network['min_node_size'] == network['max_node_size']:
-			self.cy_stylesheet[0]['style']['font-size'] = '12'
+			self.size_font_labels_default()
 			return
 
 		self.cy_stylesheet[0]['style']['font-size'] = \
@@ -84,9 +99,17 @@ class CytoscapeStylesheet():
 		self.cy_stylesheet[1]['style']['opacity'] = '1'
 
 
+	def size_edges_default(self):
+		self.cy_stylesheet[1]['style']['width'] = '1'
+
+
 	def size_edges(self, network):
+		if not all(k in network for k in ('min_edge_size', 'max_edge_size')):
+			self.size_edges_default()
+			return
+
 		if network['min_edge_size'] == network['max_edge_size']:
-			self.cy_stylesheet[1]['style']['width'] = '1'
+			self.size_edges_default()
 			return
 
 		self.cy_stylesheet[1]['style']['width'] = \

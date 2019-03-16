@@ -106,7 +106,6 @@ class BaseNetwork(metaclass=abc.ABCMeta):
             di_net[attr] = self.graph[attr]
 
         di_net['network'] = network
-        print(f'\n\n{di_net}\n\n')
         return di_net
 
 

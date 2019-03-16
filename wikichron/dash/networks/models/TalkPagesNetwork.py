@@ -148,10 +148,12 @@ class TalkPagesNetwork(BaseNetwork):
     def add_graph_attrs(self):
         self.graph['num_nodes'] = self.graph.vcount()
         self.graph['num_edges'] = self.graph.ecount()
-        self.graph['max_node_size'] = max(self.graph.vs['num_edits'])
-        self.graph['min_node_size'] = min(self.graph.vs['num_edits'])
-        self.graph['max_edge_size'] = max(self.graph.es['weight'])
-        self.graph['min_edge_size'] = min(self.graph.es['weight'])
+        if 'num_edits' in self.graph.vs.attributes():
+            self.graph['max_node_size'] = max(self.graph.vs['num_edits'])
+            self.graph['min_node_size'] = min(self.graph.vs['num_edits'])
+        if 'weight' in self.graph.es.attributes():
+            self.graph['max_edge_size'] = max(self.graph.es['weight'])
+            self.graph['min_edge_size'] = min(self.graph.es['weight'])
 
 
     def remove_non_talk_data(self, df):
