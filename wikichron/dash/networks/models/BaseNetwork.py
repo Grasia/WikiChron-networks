@@ -9,6 +9,8 @@ import pandas as pd
 from igraph import Graph, ClusterColoringPalette, VertexClustering
 from colormap.colors import rgb2hex
 
+from .fix_dendrogram import fix_dendrogram
+
 class BaseNetwork(metaclass=abc.ABCMeta):
 
     NAME = 'Base Network'
@@ -179,12 +181,14 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         """
         if not 'n_communities' in self.graph.attributes():
             weight = 'weight' if 'weight' in self.graph.es.attributes() else None
-            if not self.graph.is_directed():
-                mod = self.graph.community_multilevel(weights=weight)
-            else:
+            # igraph bug: https://github.com/igraph/python-igraph/issues/17
+            try:
                 v_d = self.graph.community_walktrap(weights=weight, steps=6)
                 mod = v_d.as_clustering()
-                
+            except:
+                fix_dendrogram(self.graph, v_d)
+                mod = v_d.as_clustering()
+
             self.graph.vs['cluster'] = mod.membership
             self.graph['n_communities'] = len(mod)
             pal = ClusterColoringPalette(len(mod))
