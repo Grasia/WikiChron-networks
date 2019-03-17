@@ -46,6 +46,11 @@ class UserTalkNetwork(BaseNetwork):
     }
 
     SECONDARY_METRICS = {
+        'Absolute Longevity': {
+            'key': 'abs_birth_int',
+            'max': 'max_abs_birth_int',
+            'min': 'min_abs_birth_int'
+        },
         'Article Edits': {
             'key': 'article_edits',
             'max': 'max_article_edits',
@@ -61,6 +66,7 @@ class UserTalkNetwork(BaseNetwork):
     USER_INFO = {
         'User ID': 'id',
         'User Name': 'label',
+        'Absolute Birth': 'abs_birth',
         'Cluster': 'cluster',
         'Article Edits': 'article_edits',
         'Talk Page Edits': 'talk_edits'
@@ -87,7 +93,9 @@ class UserTalkNetwork(BaseNetwork):
                 self.graph.vs[count_v]['num_edits'] = 0
                 count_v += 1
 
-            page_t = re.sub('User talk:', '', r['page_title'])
+            page_t = re.sub('^User talk:', '', r['page_title'])
+            # filter subdomains
+            page_t = re.sub('[\/].*', '', page_t)
             # filter anonymous user talk page
             if re.search('\.', page_t):
                 continue
@@ -163,12 +171,10 @@ class UserTalkNetwork(BaseNetwork):
 
     def add_graph_attrs(self):
         super().add_graph_attrs()
-        if 'article_edits' in self.graph.vs.attributes():
-            self.graph['max_article_edits'] = max(self.graph.vs['article_edits'])
-            self.graph['min_article_edits'] = min(self.graph.vs['article_edits'])
-        if 'talk_edits' in self.graph.vs.attributes():
-            self.graph['max_talk_edits'] = max(self.graph.vs['talk_edits'])
-            self.graph['min_talk_edits'] = min(self.graph.vs['talk_edits'])
+        for _, val in self.SECONDARY_METRICS.items():
+            if val['key'] in self.graph.vs.attributes():
+                self.graph[val['max']] = max(self.graph.vs[val['key']])
+                self.graph[val['min']] = min(self.graph.vs[val['key']])
 
 
     @classmethod

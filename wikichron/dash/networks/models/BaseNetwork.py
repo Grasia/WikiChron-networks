@@ -8,6 +8,7 @@ import abc
 import pandas as pd
 from igraph import Graph, ClusterColoringPalette, VertexClustering
 from colormap.colors import rgb2hex
+from datetime import datetime
 
 from .fix_dendrogram import fix_dendrogram
 
@@ -240,6 +241,7 @@ class BaseNetwork(metaclass=abc.ABCMeta):
         dff = self.filter_anonymous(dff)
         self.generate_from_pandas(dff)
         self.calculate_metrics()
+        self.calculate_abs_longevity(df)
         self.add_others(dff)
         self.add_graph_attrs()
 
@@ -258,7 +260,7 @@ class BaseNetwork(metaclass=abc.ABCMeta):
     def filter_anonymous(self, df: pd.DataFrame) -> pd.DataFrame:
         dff = df
         if not dff.empty:
-            dff = df['Anonymous' != df['contributor_name']]
+            dff = dff['Anonymous' != dff['contributor_name']]
 
         return dff
 
@@ -328,3 +330,24 @@ class BaseNetwork(metaclass=abc.ABCMeta):
                 edits[mapper[row['contributor_name']]] += 1
 
         self.graph.vs[key] = edits
+
+    
+    def calculate_abs_longevity(self, df: pd.DataFrame):
+        """
+        Calculates the birth of all the vertex without filter_by_time 
+        """
+        max_date = 0
+        for node in self.graph.vs:
+            dff = df[node['label'] == df['contributor_name']]
+            if not dff.empty:
+                row = dff.iloc[0]
+                node['abs_birth'] = row['timestamp']
+                node['abs_birth_int'] = int(datetime.strptime(
+                    str(row['timestamp']), "%Y-%m-%d %H:%M:%S").strftime('%s'))
+                
+                # this is a weak solution to avoid bots or users with no activity
+                if max_date < node['abs_birth_int']:
+                    max_date = node['abs_birth_int']
+            else:
+                node['abs_birth'] = 'NAN'
+                node['abs_birth_int'] = max_date

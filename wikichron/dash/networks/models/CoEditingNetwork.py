@@ -7,8 +7,6 @@
 """
 
 import pandas as pd
-import numpy
-import math
 from datetime import datetime
 
 from .BaseNetwork import BaseNetwork
@@ -23,9 +21,7 @@ class CoEditingNetwork(BaseNetwork):
             * id: user id on the wiki
             * label: the user name with id contributor_id on the wiki
             * num_edits: the number of edit in the whole wiki
-            * first_edit: this is a datetime object with the first edition
-            * last_edit: this is a datetime object with the last edition
-            * birth: int(first_edit)
+            * abs_birth: the first edit in the whole network
 
         - Edge:
             * source: contributor_id
@@ -50,10 +46,10 @@ class CoEditingNetwork(BaseNetwork):
     }
 
     SECONDARY_METRICS = {
-        'Longevity': {
-            'key': 'birth',
-            'max': 'max_birth',
-            'min': 'min_birth'
+        'Absolute Longevity': {
+            'key': 'abs_birth_int',
+            'max': 'max_abs_birth_int',
+            'min': 'min_abs_birth_int'
         },
         'Talk Edits': {
             'key': 'talk_edits',
@@ -65,9 +61,8 @@ class CoEditingNetwork(BaseNetwork):
     USER_INFO = {
         'User ID': 'id',
         'User Name': 'label',
+        'Absolute Birth': 'abs_birth',
         'Cluster': 'cluster',
-        'First Edit': 'first_edit',
-        'Last Edit': 'last_edit',
         'Talk Page Edits': 'talk_edits',
     }
 
@@ -92,13 +87,9 @@ class CoEditingNetwork(BaseNetwork):
                 self.graph.vs[count]['id'] = int(r['contributor_id'])
                 self.graph.vs[count]['label'] = r['contributor_name']
                 self.graph.vs[count]['num_edits'] = 0
-                self.graph.vs[count]['first_edit'] = r['timestamp']
-                self.graph.vs[count]['birth'] = int(datetime.strptime(
-                    str(r['timestamp']), "%Y-%m-%d %H:%M:%S").strftime('%s'))
                 count += 1
 
             self.graph.vs[mapper_v[int(r['contributor_id'])]]['num_edits'] += 1
-            self.graph.vs[mapper_v[int(r['contributor_id'])]]['last_edit'] = r['timestamp']
 
             # A page gets serveral contributors
             if not int(r['page_id']) in user_per_page:
@@ -158,12 +149,10 @@ class CoEditingNetwork(BaseNetwork):
 
     def add_graph_attrs(self):
         super().add_graph_attrs()
-        if 'birth' in self.graph.vs.attributes():
-            self.graph['max_birth'] = max(self.graph.vs['birth'])
-            self.graph['min_birth'] = min(self.graph.vs['birth'])
-        if 'talk_edits' in self.graph.vs.attributes():
-            self.graph['max_talk_edits'] = max(self.graph.vs['talk_edits'])
-            self.graph['min_talk_edits'] = min(self.graph.vs['talk_edits'])
+        for _, val in self.SECONDARY_METRICS.items():
+            if val['key'] in self.graph.vs.attributes():
+                self.graph[val['max']] = max(self.graph.vs[val['key']])
+                self.graph[val['min']] = min(self.graph.vs[val['key']])
 
 
     @classmethod
