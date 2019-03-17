@@ -40,6 +40,7 @@ class CoEditingNetwork(BaseNetwork):
     TIME_BOUND = 24 * 15
     NAME = 'Co-Editing'
     CODE = 'co_editing_network'
+    DIRECTED = False
 
     #only metrics for the ranking
     AVAILABLE_METRICS = {
@@ -67,7 +68,7 @@ class CoEditingNetwork(BaseNetwork):
         'Cluster': 'cluster',
         'First Edit': 'first_edit',
         'Last Edit': 'last_edit',
-        'Talk Pages Edit': 'talk_edits',
+        'Talk Page Edits': 'talk_edits',
     }
 
 
@@ -156,20 +157,18 @@ class CoEditingNetwork(BaseNetwork):
 
 
     def add_graph_attrs(self):
-        self.graph['num_nodes'] = self.graph.vcount()
-        self.graph['num_edges'] = self.graph.ecount()
-        if 'num_edits' in self.graph.vs.attributes():
-            self.graph['max_node_size'] = max(self.graph.vs['num_edits'])
-            self.graph['min_node_size'] = min(self.graph.vs['num_edits'])
+        super().add_graph_attrs()
         if 'birth' in self.graph.vs.attributes():
             self.graph['max_birth'] = max(self.graph.vs['birth'])
             self.graph['min_birth'] = min(self.graph.vs['birth'])
         if 'talk_edits' in self.graph.vs.attributes():
             self.graph['max_talk_edits'] = max(self.graph.vs['talk_edits'])
             self.graph['min_talk_edits'] = min(self.graph.vs['talk_edits'])
-        if 'weight' in self.graph.es.attributes():
-            self.graph['max_edge_size'] = max(self.graph.es['weight'])
-            self.graph['min_edge_size'] = min(self.graph.es['weight'])
+
+
+    @classmethod
+    def is_directed(cls):
+        return cls.DIRECTED
 
 
     def add_others(self, df):

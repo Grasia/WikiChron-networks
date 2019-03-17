@@ -36,9 +36,10 @@ class TalkPagesNetwork(BaseNetwork):
 
     NAME = 'Talk Pages'
     CODE = 'talk_pages_network'
+    DIRECTED = False
 
     AVAILABLE_METRICS = {
-        'Talk Pages Edit': 'num_edits',
+        'Talk Page Edits': 'num_edits',
         'Betweenness': 'betweenness',
         'Page Rank': 'page_rank'
     }
@@ -140,17 +141,15 @@ class TalkPagesNetwork(BaseNetwork):
 
 
     def add_graph_attrs(self):
-        self.graph['num_nodes'] = self.graph.vcount()
-        self.graph['num_edges'] = self.graph.ecount()
-        if 'num_edits' in self.graph.vs.attributes():
-            self.graph['max_node_size'] = max(self.graph.vs['num_edits'])
-            self.graph['min_node_size'] = min(self.graph.vs['num_edits'])
+        super().add_graph_attrs()
         if 'article_edits' in self.graph.vs.attributes():
             self.graph['max_article_edits'] = max(self.graph.vs['article_edits'])
             self.graph['min_article_edits'] = min(self.graph.vs['article_edits'])
-        if 'weight' in self.graph.es.attributes():
-            self.graph['max_edge_size'] = max(self.graph.es['weight'])
-            self.graph['min_edge_size'] = min(self.graph.es['weight'])
+
+
+    @classmethod
+    def is_directed(cls):
+        return cls.DIRECTED
 
     
     def add_others(self, df):
