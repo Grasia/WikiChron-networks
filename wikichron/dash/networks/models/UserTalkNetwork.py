@@ -15,7 +15,7 @@ from .BaseNetwork import BaseNetwork
 
 class UserTalkNetwork(BaseNetwork):
     """
-    This class use user-talk pages to perform a network, 
+    This class use user-talk pages to perform a network,
     where NODES are wiki users who edit in a user-talk page, and a tie
     is inferred when user A edits the B's user-talk-page.
     Thus the EDGES are directed.
@@ -27,9 +27,9 @@ class UserTalkNetwork(BaseNetwork):
             * talk_edits: edits in talk pages
             * id: The user id in the wiki
             * label: the user name in the wiki
-        
+
         - Edge:
-            * id: sourceId + targetId 
+            * id: sourceId + targetId
             * source: user_id
             * target: user_id
             * weight: the number of editions in the user-talk-page
@@ -93,12 +93,12 @@ class UserTalkNetwork(BaseNetwork):
                 self.graph.vs[count_v]['num_edits'] = 0
                 count_v += 1
 
-            page_t = re.sub('^User talk:', '', r['page_title'])
-            # filter subdomains
+            page_t = re.sub('^.+:', '', r['page_title'])
+            # remove everyhing after slash
             page_t = re.sub('[\/].*', '', page_t)
-            # filter anonymous user talk page
-            if re.search('\.', page_t):
-                continue
+            # filter anonymous user talk page for ipv4 or ipv6 (i.e it contains "." or ":")
+            if re.search('\.|\:', page_t):
+                continue # We skip anonymous
 
             if page_t == r['contributor_name']:
                 self.graph.vs[mapper_v[page_t]]['num_edits'] += 1
@@ -139,7 +139,7 @@ class UserTalkNetwork(BaseNetwork):
                 self.graph.es[count_e]['source'] = source
                 self.graph.es[count_e]['target'] = target
                 count_e += 1
-                
+
 
     def get_metric_dataframe(self, metric):
         if self.AVAILABLE_METRICS[metric] in self.graph.vs.attributes()\
@@ -181,7 +181,7 @@ class UserTalkNetwork(BaseNetwork):
     def is_directed(cls):
         return cls.DIRECTED
 
-    
+
     def add_others(self, df):
         self.calculate_edits(df, 'article')
         self.calculate_edits(df, 'talk')
