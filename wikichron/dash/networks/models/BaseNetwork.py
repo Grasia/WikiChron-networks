@@ -28,10 +28,10 @@ class BaseNetwork(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def generate_from_pandas(self, df: pd.DataFrame):
         """
-        Generates an igraph instance from pandas data
+        Fill the igraph attribute from pandas data
 
         Parameters:
-            -df: A pandas object with the wiki info (read from csv),
+            -df: A pandas object with the wiki info (coming from the csv file),
                    must be ordered by timestamp
         """
         pass
